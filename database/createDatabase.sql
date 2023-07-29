@@ -1,8 +1,6 @@
 drop database if exists jsgame;
 create database jsgame;
-
 use jsgame;
-
 drop table if exists account;
 create table account(
 	id varchar(40) not null,
