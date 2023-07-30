@@ -34,29 +34,30 @@
 	  			}
 	  		});
 		});
+		function alertMessage(msg) {
+			document.getElementById('alertmessage').style.display = "block";
+			document.getElementById('alertmessage').innerHTML = msg;
+			alert(msg);
+		}
 		function signUpCheck() {
 			identifier = document.getElementById('identifier').value;
 			pass = document.getElementById('password').value;
 			pass2 = document.getElementById('password2').value;
 			nickname = document.getElementById('nickname').value;
-			if ((pass.length < 4) || (20 < pass.length)) {
-				document.getElementById('alertmessage').style.display = "block";
-				document.getElementById('alertmessage').innerHTML = "패스워드를 4글자 이상 20글자 이하로 하시오";
+			if (identifier.length == 0) {
+				alertMessage("아이디를 입력해주세요");
+				return;
+			}
+			else if ((pass.length < 4) || (20 < pass.length)) {
+				alertMessage("패스워드를 4글자 이상 20글자 이하로 하시오");
 				return;
 			}
 			else if (pass != pass2) {
-				document.getElementById('alertmessage').style.display = "block";
-				document.getElementById('alertmessage').innerHTML = "두 패스워드가 다릅니다. 다시 입력하시오";
-				return;
-			}
-			else if (identifier.length == 0) {
-				document.getElementById('alertmessage').style.display = "block";
-				document.getElementById('alertmessage').innerHTML = "아이디를 입력해주세요";
+				alertMessage("두 패스워드가 다릅니다. 다시 입력하시오");
 				return;
 			}
 			else if (nickname.length == 0) {
-				document.getElementById('alertmessage').style.display = "block";
-				document.getElementById('alertmessage').innerHTML = "닉네임을 입력해주세요";
+				alertMessage("닉네임을 입력해주세요");
 				return;
 			}
 			$.ajax({
@@ -74,20 +75,19 @@
 					else {
 						console.log(result);
 						if (result == "idOverlapped") {
-							document.getElementById('alertmessage').style.display = "block";
-							document.getElementById('alertmessage').innerHTML = "이미 있는 아이디입니다. 다른 아이디를 선택하시오";
+							alertMessage("이미 있는 아이디입니다. 다른 아이디를 선택하시오");
 							return;
 						}
 						else if (result == "nickNameOverlapped") {
-							document.getElementById('alertmessage').style.display = "block";
-							document.getElementById('alertmessage').innerHTML = "이미 있는 닉네임입니다. 다른 닉네임을 선택하시오";
+							alertMessage("이미 있는 닉네임입니다. 다른 닉네임을 선택하시오");
 							return;
 						}
-
 					}
 				},
 				error: function (error) {
 					console.log(error);
+					alertMessage(JSON.stringify(error));
+					alert(JSON.stringify(error));
 				}
 			});
 		}
@@ -99,10 +99,10 @@
 		<a class="navbar-brand" href="/" target="_self">HOME</a>
 		<ul class="navbar-nav mr-auto">
 			<li class="nav-item">
-				<a class="nav-link" href="GameMapList.html" target="_self">GameMapList</a>
+				<a class="nav-link" href="GameMapList" target="_self">GameMapList</a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link" href="Rank.html" target="_self">Rank</a>
+				<a class="nav-link" href="Rank" target="_self">Rank</a>
 			</li>
 			<% if (logIn === true) { %>
 			<li class="nav-item">
@@ -110,10 +110,10 @@
 			</li>
 			<% } else { %>
 			<li class="nav-item">
-				<a class="nav-link" href="signUp.html" target="_self">회원가입</a>
+				<a class="nav-link" href="signUp" target="_self">회원가입</a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link" href="signIn.html" target="_self">로그인</a>
+				<a class="nav-link" href="signIn" target="_self">로그인</a>
 			</li>
 			<% } %>
 		</ul>
@@ -143,6 +143,9 @@
 				<label for="pwd">닉네임:</label>
 				<input type="text" class="form-control" id="nickname" placeholder="Enter nickname" name="nickname"
 					maxlength="20" required>
+			</div>
+			<div>
+				<a style="color:orange; display:none" id="alertmessage">정보출력 메시지</a>
 			</div>
 			<br>
 			<input type="button" class="btn btn-success" value="회원가입" id="btnSignUp">

@@ -3,7 +3,7 @@ create database jsgame;
 use jsgame;
 drop table if exists account;
 create table account(
-	id varchar(40) not null,
+	userId varchar(40) not null,
 	passwd varchar(70) not null,
 	nickname varchar(40) not null,
 	level int DEFAULT 1,
@@ -12,5 +12,5 @@ create table account(
 	wbLimitQuantity int DEFAULT 1,
 	wbLen int DEFAULT 1,
 	money int DEFAULT 0,
-	primary key(id)
+	primary key(userId)
 )default charset=utf8;

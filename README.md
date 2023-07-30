@@ -1,3 +1,12 @@
 # webCommunity
 
-sksn
+## 사용 언어 및 라이브러리
+- nodejs
+- express
+- express-session
+- mysql2
+
+## 만들며 고민했던 내용
+- python flask로 만들었을 때는 flask내부에서 session을 지원하여 편하게 구현했지만, express는 자체적으로 session을 지원하지 않아 express-session 모듈을 사용해 세션을 구현했다.
+- express는 동기적으로 동작한다. 하지만 mysql2는 비동기적으로 작동한다. js문법상 동기 함수에서 비동기 함수 호출 결과를 읽을 수 없기 때문에 고민했다. koa.js가 비동기 함수를 쉽게 다룰 수 있게 만들어진 모듈이라고 하지만, npm사이트를 보니 express가 koa보다 18배정도 다운로드 수가 차이나는것을 보니 express로 진행하기로 했다. 
+- 하지만 https://programmingsummaries.tistory.com/399 블로그에서는 예상치 못한 오류가 발생한다면 문제가 발생할 수 있다고 한다. 해당 블로그에서는 데코레이션 패턴을 사용해 해결하였다고 하니, 나도 데코레이션 패턴을 사용해 해결해 보자.
