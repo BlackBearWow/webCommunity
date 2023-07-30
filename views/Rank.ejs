@@ -28,25 +28,30 @@
    			<li class="nav-item">
         		<a class="nav-link" href="Rank" target="_self">Rank</a>
 	    	</li>
+			<% if (logIn === true) { %>
 	    	<li class="nav-item">
         		<a class="nav-link" href="logout" target="_self">로그아웃</a>
     		</li>
+			<% } else { %>
+			<li class="nav-item">
+        		<a class="nav-link" href="signUp" target="_self">회원가입</a>
+	    	</li>
+			<li class="nav-item">
+        		<a class="nav-link" href="signIn" target="_self">로그인</a>
+	    	</li>
+			<% } %>
     	</ul>
 	</nav>
 	<br>
 	<br>
 	<div class="container p-3 my-3 bg-dark text-white">
-		<h4>Welcome!</h4>
+		<h4>랭킹</h4>
 		<ul class="list-group">
-			<li class="list-group-item list-group-item-action"><a><%=userId%>님 환영합니다!</a></li>
-		    <li class="list-group-item list-group-item-action">
-                <a>
-                    닉네임: <%= nickname %> <br>level: <%=level%> <br>exp: <%=exp%>
-                    <br>스피드: <%=speed%> <br>물풍선개수: <%=wbLimitQuantity%> 
-                    <br>물줄기: <%=wbLen%> <br>돈: <%=money%>
-                </a>
-                <br><img src="/images/bazzi/배찌31.png" alt='배찌'>
-            </li>
+			<% for(x in rows) { %>
+			<li class="list-group-item list-group-item-action"><a><%=parseInt(x)+1%>위: <%=rows[x].nickname%> level: <%=rows[x].level%> exp: <%=rows[x].exp%></a> <img src="/images/bazzi/배찌31.png" alt='배찌'></li>
+			<% } %>
+			<!--li class="list-group-item list-group-item-action"><a>1위: 짜짬뽕면 level: 232 exp: 245</a> <img src="/images/bazzi/배찌31.png" alt='배찌'></li>
+			<li class="list-group-item list-group-item-action"><a>2위: 무림고수 level: 200 exp: 245</a> <img src="/images/bazzi/배찌32.png" alt='배찌'></li-->
 		</ul>
 	</div>
     </body>

@@ -94,6 +94,12 @@ app.post('/canISignIn', async (req, res)=> {
     res.send('ok');
 })
 
+// 랭킹 화면
+app.get('/Rank', async (req, res) => {
+    const rows = await DB.select(`select nickname, level, exp from account order by level desc, exp desc`);
+    res.render('Rank', {logIn:(req.session.userId ? true : false), rows});
+})
+
 app.get('/n', (req, res) => {
     req.session.user = "juho";
     res.redirect('/');
