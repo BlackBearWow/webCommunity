@@ -100,6 +100,11 @@ app.get('/Rank', async (req, res) => {
     res.render('Rank', {logIn:(req.session.userId ? true : false), rows});
 })
 
+// 게임 맵 리스트 화면
+app.get('/GameMapList', async (req, res) => {
+    res.render('GameMapList', {logIn:(req.session.userId ? true : false)});
+})
+
 app.get('/n', (req, res) => {
     req.session.user = "juho";
     res.redirect('/');

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+<html>
 <head>
-	<title>mixedGame</title>
+	<title>게임 리스트</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -10,6 +11,7 @@
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
+	<link rel="shortcut icon" href="https://blackbearwow.github.io/favicon/favicon.ico">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<style>
 		body
@@ -25,31 +27,34 @@
     		<li class="nav-item">
         		<a class="nav-link" href="GameMapList" target="_self">GameMapList</a>
     		</li>
-			<li class="nav-item">
+   			<li class="nav-item">
         		<a class="nav-link" href="Rank" target="_self">Rank</a>
 	    	</li>
-   			<li class="nav-item">
+	    	<% if (logIn === true) { %>
+	    	<li class="nav-item">
+        		<a class="nav-link" href="logout" target="_self">로그아웃</a>
+    		</li>
+			<% } else { %>
+			<li class="nav-item">
         		<a class="nav-link" href="signUp" target="_self">회원가입</a>
 	    	</li>
 			<li class="nav-item">
         		<a class="nav-link" href="signIn" target="_self">로그인</a>
 	    	</li>
+			<% } %>
     	</ul>
 	</nav>
 	<br>
 	<br>
 	<div class="container p-3 my-3 bg-dark text-white">
-		<h4>회원가입 / 로그인</h4>
+		<h4>크레이지스토리 (크아+메이플)</h4>
 		<ul class="list-group">
-		    <li class="list-group-item list-group-item-action"><a href="signUp">회원가입</a></li>
-		    <li class="list-group-item list-group-item-action"><a href="signIn">로그인</a></li>
-		</ul>
-	</div>
-	<div class="container p-3 my-3 bg-dark text-white">
-		<h4>Welcome!</h4>
-		<ul class="list-group">
-			<li class="list-group-item list-group-item-action"><a>메이플 아케이드 게임 홈페이지에 오신걸 환영합니다</a></li>
-		    <li class="list-group-item list-group-item-action"><img src="/images/대표이미지.png" alt='배찌' width="100%"></li>
+		    <li class="list-group-item list-group-item-action"><a href="중앙사냥터">중앙사냥터</a></li>
+		    <li class="list-group-item list-group-item-action"><a href="서쪽사냥터">서쪽사냥터</a></li>
+		    <li class="list-group-item list-group-item-action"><a href="동쪽사냥터">동쪽사냥터</a></li>
+		    <li class="list-group-item list-group-item-action"><a href="남쪽사냥터">남쪽사냥터</a></li>
+		    <li class="list-group-item list-group-item-action">로그인 상태에서 플레이시 게임이 저장됩니다. 익명 상태에서는 게임이 저장되지 않습니다.</li>
+		    <li class="list-group-item list-group-item-action">게임방법: 스페이스바로 물풍선을 놓고 방향키로 움직이면 됩니다. 모바일에서는 못해요! pc로 해주세요</li>
 		</ul>
 	</div>
     </body>
