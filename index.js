@@ -108,6 +108,18 @@ app.get('/GameMapList', async (req, res) => {
     res.render('GameMapList', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
 })
 
+// 게시판 화면
+app.get('/bulletinBoard', async (req, res) => {
+    res.render('bulletinBoard', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
+})
+
+// 게시글들 리스트 반환
+app.get('/getPosts', async (req, res) => {
+    const rows = await DB.select(`select bId, title, postDatetime, commentNum from post order by bId`);
+    console.log(rows);
+    res.send(rows);
+})
+
 app.get('/n', (req, res) => {
     req.session.user = "juho";
     res.redirect('/');

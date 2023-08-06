@@ -1,4 +1,5 @@
 const fs = require('node:fs');
+const moment = require('moment-timezone');
 const hash = require('./hash');
 const mysql = require('mysql2');
 
@@ -18,9 +19,18 @@ function createDatabase() {
     console.log(`db, table생성 완료`);
 }
 
-function insertData(data) {
+function insertAccountData(data) {
     connection.execute(`insert into jsgame.account values (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]], 
+    (error, results, fields) => {
+        if(error) {console.log(`에러발생: ${sql}`); throw error}
+        else console.log(`성공: ${JSON.stringify(results)}`);
+    })
+}
+
+function insertPostData(data) {
+    connection.execute(`insert into jsgame.post (title, text, postDatetime, commentNum) values (?, ?, ?, ?);`,
+    [data[0], data[1], data[2], data[3]], 
     (error, results, fields) => {
         if(error) {console.log(`에러발생: ${sql}`); throw error}
         else console.log(`성공: ${JSON.stringify(results)}`);
@@ -35,11 +45,17 @@ createDatabase();
 //이상하게도 db를 만들고 insert까지하려하면 jsgame이 없다고 나온다.
 //해당 오류는 connection.connect와 connection.end를 프로그램 시작과 마지막으로 옮겨서 해결했다.
 
-insertData([`admin`, `${hash.sha256('1234')}`, `admin`, 20, 30, 4.0, 5, 5, 5000]);
-insertData([`guest`, `${hash.sha256('guest')}`, `guest`, 20, 1, 2.0, 3, 3, 5000]);
-insertData([`sce6544`, `${hash.sha256('as86cew5x1')}`, `차돌짬뽕`, 10, 1, 2.0, 3, 3, 5000]);
-insertData([`se654c`, `${hash.sha256('3ew515s48c')}`, `김치찌개`, 10, 1, 2.0, 3, 3, 5000]);
-insertData([`pat0407`, `${hash.sha256('asdf')}`, `김치찌개`, 10, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`admin`, `${hash.sha256('1234')}`, `admin`, 20, 30, 4.0, 5, 5, 5000]);
+insertAccountData([`guest`, `${hash.sha256('guest')}`, `guest`, 20, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`sce6544`, `${hash.sha256('as86cew5x1')}`, `차돌짬뽕`, 10, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`se654c`, `${hash.sha256('3ew515s48c')}`, `김치찌개`, 10, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`pat0407`, `${hash.sha256('asdf')}`, `김치찌개`, 10, 1, 2.0, 3, 3, 5000]);
+
+// 현재 한국 시간 가져오기
+const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
+
+insertPostData([`예제 타이틀`, `여기는 내용을 적는 공간입니다`, now, 0]);
+insertPostData([`예제 타이틀2`, `여기는 내용을 적는 공간입니다2`, now, 0]);
 
 // 종료
 connection.end();

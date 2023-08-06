@@ -5,6 +5,9 @@ function navStr(logIn) {
 <li class="nav-item">
     <a class="nav-link" href="Rank" target="_self">Rank</a>
 </li>
+<li class="nav-item">
+    <a class="nav-link" href="bulletinBoard" target="_self">게시판</a>
+</li>
 `;
     if (logIn) {
         return baseStr + `<li class="nav-item">

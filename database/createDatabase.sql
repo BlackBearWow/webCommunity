@@ -14,3 +14,12 @@ create table account(
 	money int DEFAULT 0,
 	primary key(userId)
 )default charset=utf8;
+drop table if exists post;
+create table post(
+	bId int not null auto_increment,
+	title varchar(50) not null,
+	text varchar(500) not null,
+	postDatetime datetime not null,
+	commentNum int default 0,
+	primary key(bId)
+)default charset=utf8;
