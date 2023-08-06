@@ -98,24 +98,7 @@
 	<nav class="navbar navbar-expand navbar-dark bg-dark fixed-top">
 		<a class="navbar-brand" href="/" target="_self">HOME</a>
 		<ul class="navbar-nav mr-auto">
-			<li class="nav-item">
-				<a class="nav-link" href="GameMapList" target="_self">GameMapList</a>
-			</li>
-			<li class="nav-item">
-				<a class="nav-link" href="Rank" target="_self">Rank</a>
-			</li>
-			<% if (logIn === true) { %>
-			<li class="nav-item">
-				<a class="nav-link" href="logout" target="_self">로그아웃</a>
-			</li>
-			<% } else { %>
-			<li class="nav-item">
-				<a class="nav-link" href="signUp" target="_self">회원가입</a>
-			</li>
-			<li class="nav-item">
-				<a class="nav-link" href="signIn" target="_self">로그인</a>
-			</li>
-			<% } %>
+			<%- navText %>
 		</ul>
 	</nav>
 	<br>

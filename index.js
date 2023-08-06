@@ -6,6 +6,7 @@ const server = http.createServer(app);
 const session = require("express-session");
 const DB = require('./db');
 const hash = require('./hash');
+const logInOutStr = require('./logInOutStr');
 
 app.use(express.json());
 app.use(express.urlencoded());
@@ -31,12 +32,13 @@ app.get('/', async (req, res) => {
         console.log(req.session.userId);
         const rows = await DB.select(`select * from account where userId='${req.session.userId}';`);
         console.log(rows);
-        res.render('index_afterLogin', {userId:rows[0].userId, nickname:rows[0].nickname, level:rows[0].level, exp:rows[0].exp, 
+        res.render('index_afterLogin', {navText:logInOutStr.navStr(req.session.userId ? true : false), 
+            userId:rows[0].userId, nickname:rows[0].nickname, level:rows[0].level, exp:rows[0].exp, 
             speed:rows[0].speed, wbLimitQuantity:rows[0].wbLimitQuantity, wbLen:rows[0].wbLen, money:rows[0].money});
     }
     //로그인 안했을 때
     else {
-        res.render('index_beforeLogin');
+        res.render('index_beforeLogin', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
     }
 });
 
@@ -48,7 +50,8 @@ app.get('/logout', (req, res) => {
 
 // 회원가입 화면
 app.get('/signUp', (req, res) => {
-    res.render('signUp', {logIn:(req.session.userId ? true : false)});
+    //{logIn:(req.session.userId ? true : false)}
+    res.render('signUp', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
 })
 
 //id, passwd, nickname을 받아 회원가입이 가능하다면 db에 insert, 아니면 오류메시지를 표시
@@ -73,7 +76,7 @@ app.get('/canISignUp', async (req, res) => {
 
 // 로그인 화면
 app.get('/signIn', (req, res) => {
-    res.render('signIn', {logIn:(req.session.userId ? true : false)});
+    res.render('signIn', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
 })
 
 // id, passwd를 받아 맞는 id, pqsswd라면 세션 생성
@@ -97,12 +100,12 @@ app.post('/canISignIn', async (req, res)=> {
 // 랭킹 화면
 app.get('/Rank', async (req, res) => {
     const rows = await DB.select(`select nickname, level, exp from account order by level desc, exp desc`);
-    res.render('Rank', {logIn:(req.session.userId ? true : false), rows});
+    res.render('Rank', {navText:logInOutStr.navStr(req.session.userId ? true : false), rows});
 })
 
 // 게임 맵 리스트 화면
 app.get('/GameMapList', async (req, res) => {
-    res.render('GameMapList', {logIn:(req.session.userId ? true : false)});
+    res.render('GameMapList', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
 })
 
 app.get('/n', (req, res) => {
