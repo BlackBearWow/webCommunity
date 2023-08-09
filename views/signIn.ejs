@@ -22,7 +22,7 @@
 	</style>
 
 	<script>
-		var identifier, pass;
+		let identifier, pass;
 	  	$(document).ready(function(){
 	  		$("#btnLogin").click(function(){
 	  			loginCheck();
@@ -92,7 +92,7 @@
 	<div class="container p-3 my-3 bg-dark text-white">
 		<h1>로그인</h1>
 		<br>
-		<form id="form" action="signIn" method="POST">
+		<form id="form" action="/signIn" method="POST">
 		    <div class="form-group">
 		    	<label for="pwd">아이디:</label>
 		        <input type="text" class="form-control" id="identifier" placeholder="id" name="id" maxlength="20" required>

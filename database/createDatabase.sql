@@ -21,5 +21,6 @@ create table post(
 	text varchar(500) not null,
 	postDatetime datetime not null,
 	commentNum int default 0,
+	userId varchar(40) not null,
 	primary key(bId)
 )default charset=utf8;

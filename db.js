@@ -19,8 +19,10 @@ async function select(sql) {
 async function insert(sql) {
     const [rows, feilds] = await pool.promise().query(sql);
     console.log(sql);
-    console.log(rows);
-    console.log(feilds);
+}
+
+async function deleteSql(sql) {
+    const [rows, feilds] = await pool.promise().query(sql);
 }
 
 async function insertNewId(id, passwd, nickname) {
@@ -28,13 +30,4 @@ async function insertNewId(id, passwd, nickname) {
     [id, hash.sha256(passwd), nickname]);
 }
 
-async function main() {
-    const rows = await select(`select count(*) from account limit 2;`);
-    console.log(`리턴이 되는거니? ${JSON.stringify(rows)}}`);
-    await select(`select id from account;`);
-
-    pool.end((err)=>{});
-}
-//main();
-
-module.exports = {select, insert, insertNewId};
+module.exports = {select, insert, deleteSql, insertNewId};

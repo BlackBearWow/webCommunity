@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>게시판</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-image: url("https://blackbearwow.github.io/image/paper.gif");
+        }
+    </style>
+    <script>
+        const bId = window.location.href.split('/')[4];
+        $(document).ready(() => {
+            updatePost();
+        })
+        function updatePost() {
+            $.ajax({
+                url: `/getPostBybId/${bId}`,
+                type: "get",
+                data: {
+                },
+                success: function (rows) {
+                    const row = rows[0];
+                    console.log(row);
+                    // UTC 시간을 JavaScript Date 객체로 변환
+                    const utcDate = new Date(row.postDatetime);
+                    // 브라우저의 로케일에 따라 한국 시간으로 변환하여 표시
+                    const koreaTime = utcDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+                    $('#postTime').text(koreaTime);
+                    $('#postTitle').text(row.title);
+                    $('#postText').text(row.text);
+                    $('#postUser').text(`게시자: ${row.nickname}`)
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        }
+        function deletePost() {
+            $.ajax({
+                url: `/deletePost/${bId}`,
+                type: "get",
+                data:{},
+                success: function(msg) {
+                    if(msg === "noRight"){
+                        alert("권한이 없습니다");
+                    }
+                    else if(msg === "ok"){
+                        alert("정상적으로 삭제했습니다.");
+                        location.href="/bulletinBoard";
+                    }
+                },
+                error: function (error){
+                    console.log(error);
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand navbar-dark bg-dark fixed-top">
+        <a class="navbar-brand" href="/" target="_self">HOME</a>
+        <ul class="navbar-nav mr-auto">
+            <%- navText %>
+        </ul>
+    </nav>
+    <br>
+    <br>
+    <div class="container p-3 my-3 bg-dark text-white" id="posts">
+        <h6 id="postUser">게시자</h6>
+        <h5 id="postTime">글 작성 시간</h5>
+        <h4 id="postTitle">글 리스트</h4>
+        <ul class="list-group">
+            <li class="list-group-item list-group-item-action" id="postText">글 내용</li>
+		</ul>
+        <input type="button" class="btn btn-success" value="수정하기" id="btnLogin" onclick="editPost()">
+        <input type="button" class="btn btn-success" value="삭제하기" id="btnLogin" onclick="deletePost()">
+    </div>
+</body>
+
+</html>

@@ -29,9 +29,7 @@ const doAsync = fn => async(req, res, next) => await fn(req, res, next).catch(ne
 app.get('/', async (req, res) => {
     //로그인 했을 때
     if(req.session.userId) {
-        console.log(req.session.userId);
         const rows = await DB.select(`select * from account where userId='${req.session.userId}';`);
-        console.log(rows);
         res.render('index_afterLogin', {navText:logInOutStr.navStr(req.session.userId ? true : false), 
             userId:rows[0].userId, nickname:rows[0].nickname, level:rows[0].level, exp:rows[0].exp, 
             speed:rows[0].speed, wbLimitQuantity:rows[0].wbLimitQuantity, wbLen:rows[0].wbLen, money:rows[0].money});
@@ -116,14 +114,36 @@ app.get('/bulletinBoard', async (req, res) => {
 // 게시글들 리스트 반환
 app.get('/getPosts', async (req, res) => {
     const rows = await DB.select(`select bId, title, postDatetime, commentNum from post order by bId`);
-    console.log(rows);
     res.send(rows);
 })
 
-app.get('/n', (req, res) => {
-    req.session.user = "juho";
-    res.redirect('/');
+// 게시글 내용 보이기
+app.get('/viewPost/:bId', (req, res) => {
+    res.render('viewPost', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
 });
+
+// 게시글 내용 반환
+app.get('/getPostBybId/:bId', async (req, res)=>{
+    const bId = req.params.bId;
+    const rows = await DB.select(`select bId, title, text, postDatetime, commentNum, nickname 
+    from post, account where bId = ${bId} and post.userId = account.userId`);
+    res.send(rows);
+})
+
+app.get('/deletePost/:bId', async (req, res)=>{
+    const bId = req.params.bId;
+    if(req.session.userId ? true : false){
+        const rows = await DB.select(`select userId from post where bId = ${bId}`);
+        if(rows[0].userId === req.session.userId) {
+            await DB.deleteSql(`delete from post where bId = ${bId}`);
+            res.send('ok');
+        }
+        else res.send('noRight');
+    }
+    else{
+        res.send('noRight');
+    }
+})
 
 server.listen(8880, () => {
     console.log('listening on *:8880');
