@@ -21,11 +21,17 @@ async function insert(sql) {
     console.log(sql);
 }
 
-async function insertPost(title, text, userId) {
+async function insertPost(title, text, userId, nickname) {
     // 현재 한국 시간 가져오기
     const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
-    const [rows, feilds] = await pool.promise().execute(`insert into jsgame.post (title, text, postDatetime, commentNum, userId) values (?, ?, ?, ?, ?);`,
-    [title, text, now, 0, userId]);
+    const [rows, feilds] = await pool.promise().execute(`insert into jsgame.post (title, text, postDatetime, commentNum, userId, nickname) values (?, ?, ?, ?, ?, ?);`,
+    [title, text, now, 0, userId, nickname]);
+}
+
+async function insertComment(bId, cText, userId, nickname) {
+    const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
+    const [rows, feilds] = await pool.promise().execute(`insert into jsgame.comment (bId, cText, commentDatetime, userId, nickname) values (?, ?, ?, ?, ?);`,
+    [bId, cText, now, userId, nickname]);
 }
 
 async function updatePost(title, text, bId) {
@@ -43,4 +49,4 @@ async function insertNewId(id, passwd, nickname) {
     [id, hash.sha256(passwd), nickname]);
 }
 
-module.exports = {select, insert, insertPost, updatePost, deleteSql, insertNewId};
+module.exports = {select, insert, insertPost, insertComment, updatePost, deleteSql, insertNewId};

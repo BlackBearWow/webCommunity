@@ -36,6 +36,7 @@ app.get('/', async (req, res) => {
     }
     //로그인 안했을 때
     else {
+        //res.render('sample', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
         res.render('index_beforeLogin', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
     }
 });
@@ -136,7 +137,8 @@ app.post('/sendPost', async (req, res)=>{
     const title = req.body.title;
     const text = req.body.text;
     const userId = req.session.userId;
-    await DB.insertPost(title, text, userId);
+    const nickname = req.session.nickname;
+    await DB.insertPost(title, text, userId, nickname);
     res.send("ok");
 })
 
@@ -149,8 +151,29 @@ app.get('/viewPost/:bId', (req, res) => {
 app.get('/getPostBybId/:bId', async (req, res)=>{
     const bId = req.params.bId;
     const rows = await DB.select(`select bId, title, text, postDatetime, commentNum, nickname 
-    from post, account where bId = ${bId} and post.userId = account.userId`);
+    from post where bId = ${bId}`);
     res.send(rows);
+})
+
+// 댓글 내용 반환
+app.get(`/getCommentBybId/:bId`, async (req, res)=>{
+    const bId = req.params.bId;
+    const rows = await DB.select(`select * from comment where bId = ${bId}`);
+    res.send(rows);
+})
+
+// 댓글 쓰기
+app.get(`/sendComment/:bId`, async (req, res)=>{
+    if(req.session.userId ? true : false) {
+        const bId = req.params.bId;
+        const cText = req.query.cText;
+        const userId = req.session.userId;
+        const nickname = req.session.nickname;
+        await DB.insertComment(bId, cText, userId, nickname);
+        res.send('ok');
+    }
+    else
+        res.send('you have to log in');
 })
 
 // 게시글 수정

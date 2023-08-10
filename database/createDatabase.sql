@@ -22,5 +22,16 @@ create table post(
 	postDatetime datetime not null,
 	commentNum int default 0,
 	userId varchar(40) not null,
+	nickname varchar(40) not null,
 	primary key(bId)
+)default charset=utf8;
+drop table if exists comment;
+create table comment(
+	cId int not null auto_increment,
+	bId int not null,
+	cText varchar(100),
+	commentDatetime datetime not null,
+	userId varchar(40) not null,
+	nickname varchar(40) not null,
+	primary key(cId)
 )default charset=utf8;

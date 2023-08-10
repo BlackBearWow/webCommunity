@@ -21,6 +21,7 @@
         const bId = window.location.href.split('/')[4];
         $(document).ready(() => {
             updatePost();
+            updateComment();
         })
         function updatePost() {
             $.ajax({
@@ -36,7 +37,7 @@
                     // 브라우저의 로케일에 따라 한국 시간으로 변환하여 표시
                     const koreaTime = utcDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
                     $('#postTime').text(koreaTime);
-                    $('#postTitle').text(row.title);
+                    $('#postTitle').text(`제목: ${row.title}`);
                     $('#postText').text(row.text);
                     $('#postUser').text(`게시자: ${row.nickname}`)
                 },
@@ -67,27 +68,70 @@
                 }
             });
         }
+        function updateComment() {
+            $.ajax({
+                url: `/getCommentBybId/${bId}`,
+                type: "get",
+                data: {
+                },
+                success: function (rows) {
+                    rows.forEach((row, index, arr)=>{
+                        $('#comments').append(`<li class="list-group-item list-group-item-action">${row.cText}
+                            <input type="button" class="btn btn-success" value="삭제" onclick="removeComment(${row.cId})"></li>`);
+                    })
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        }
+        function sendComment() {
+            $.ajax({
+                url: `/sendComment/${bId}`,
+                type: "get",
+                data: {
+                    cText:$('#comment').val()
+                },
+                success: function (msg) {
+                    if(msg === "ok") {
+                        $('#comments').empty();
+                        updateComment();
+                    }
+                    else {
+                        alert('로그인 후 이용해주세요');
+                    }
+                }
+            })
+        }
     </script>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand navbar-dark bg-dark fixed-top">
-        <a class="navbar-brand" href="/" target="_self">HOME</a>
-        <ul class="navbar-nav mr-auto">
+    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
+        <a class="my-0 mr-md-auto font-weight-normal text-dark" href="/">Home</a>
+        <nav class="my-2 my-md-0 mr-md-3">
             <%- navText %>
-        </ul>
-    </nav>
-    <br>
-    <br>
+        </nav>
+        <a class="btn btn-outline-primary" href="#">Sign up</a>
+    </div>
     <div class="container p-3 my-3 bg-dark text-white" id="posts">
         <h6 id="postUser">게시자</h6>
         <h5 id="postTime">글 작성 시간</h5>
         <h4 id="postTitle">글 리스트</h4>
+        <p class="lead mb-4" id="postText"></p>
         <ul class="list-group">
-            <li class="list-group-item list-group-item-action" id="postText">글 내용</li>
+            <li class="list-group-item list-group-item-action" id="postText2">글 내용</li>
 		</ul>
         <input type="button" class="btn btn-success" value="수정하기" id="btnLogin" onclick="editPost()">
         <input type="button" class="btn btn-success" value="삭제하기" id="btnLogin" onclick="deletePost()">
+    </div>
+    <div class="container p-3 my-3 bg-primary text-white">
+        <ul class="list-group" id="comments">
+		</ul>
+    </div>
+    <div class="container p-3 my-3 bg-primary text-white" id="댓글쓰기">
+		<input type="text" class="form-control" id="comment" placeholder="댓글" name="comment" maxlength="20" required>
+        <input type="button" class="btn btn-success" value="확인" id="btnComment" onclick="sendComment()">
     </div>
 </body>
 

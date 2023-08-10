@@ -29,7 +29,16 @@ function insertAccountData(data) {
 }
 
 function insertPostData(data) {
-    connection.execute(`insert into jsgame.post (title, text, postDatetime, commentNum, userId) values (?, ?, ?, ?, ?);`,
+    connection.execute(`insert into jsgame.post (title, text, postDatetime, commentNum, userId, nickname) values (?, ?, ?, ?, ?, ?);`,
+    [data[0], data[1], data[2], data[3], data[4], data[5]], 
+    (error, results, fields) => {
+        if(error) {console.log(`에러발생: ${sql}`); throw error}
+        else console.log(`성공: ${JSON.stringify(results)}`);
+    })
+}
+
+function insertCommentData(data) {
+    connection.execute(`insert into jsgame.comment (bId, cText, commentDatetime, userId, nickname) values (?, ?, ?, ?, ?);`,
     [data[0], data[1], data[2], data[3], data[4]], 
     (error, results, fields) => {
         if(error) {console.log(`에러발생: ${sql}`); throw error}
@@ -54,8 +63,11 @@ insertAccountData([`asdf`, `${hash.sha256('asdf')}`, `김치찌개`, 10, 1, 2.0,
 // 현재 한국 시간 가져오기
 const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
 
-insertPostData([`예제 타이틀`, `여기는 내용을 적는 공간입니다`, now, 0, 'admin']);
-insertPostData([`예제 타이틀2`, `여기는 내용을 적는 공간입니다2`, now, 0, 'admin']);
+insertPostData([`예제 타이틀`, `여기는 내용을 적는 공간입니다`, now, 0, 'admin', '관리자']);
+insertPostData([`예제 타이틀2`, `여기는 내용을 적는 공간입니다2`, now, 0, 'admin', '관리자']);
+
+insertCommentData([1, `댓글이당`, now, 'admin', '관리자']);
+insertCommentData([1, `댓글이당22`, now, 'admin', '관리자']);
 
 // 종료
 connection.end();
