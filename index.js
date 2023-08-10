@@ -113,8 +113,31 @@ app.get('/bulletinBoard', async (req, res) => {
 
 // 게시글들 리스트 반환
 app.get('/getPosts', async (req, res) => {
-    const rows = await DB.select(`select bId, title, postDatetime, commentNum from post order by bId`);
+    const rows = await DB.select(`select bId, title, postDatetime, commentNum from post order by bId desc`);
     res.send(rows);
+})
+
+// 새글 쓰기 화면
+app.get('/newPost', (req, res)=>{
+    if(req.session.userId ? true : false) {
+        res.render('newPost', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
+    }
+    else {
+        res.send(`<script>alert('로그인 후 이용해주세요');history.back();</script>`);
+    }
+})
+
+// 새글 쓰기
+app.post('/sendPost', async (req, res)=>{
+    if((req.session.userId ? true : false)===false){
+        res.send(`error: no login`);
+        return;
+    }
+    const title = req.body.title;
+    const text = req.body.text;
+    const userId = req.session.userId;
+    await DB.insertPost(title, text, userId);
+    res.send("ok");
 })
 
 // 게시글 내용 보이기

@@ -1,6 +1,6 @@
 const hash = require('./hash');
 const mysql = require('mysql2');
-// mysql을 동기적으로 사용하는 방법을 알아내야 함. chatgpt에게 물어보니 mysql2라는게 있다고 한다. 더 알아보자.
+const moment = require('moment-timezone');
 
 const host = '127.0.0.1';
 const port = 3306;
@@ -21,6 +21,13 @@ async function insert(sql) {
     console.log(sql);
 }
 
+async function insertPost(title, text, userId) {
+    // 현재 한국 시간 가져오기
+    const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
+    const [rows, feilds] = await pool.promise().execute(`insert into jsgame.post (title, text, postDatetime, commentNum, userId) values (?, ?, ?, ?, ?);`,
+    [title, text, now, 0, userId]);
+}
+
 async function deleteSql(sql) {
     const [rows, feilds] = await pool.promise().query(sql);
 }
@@ -30,4 +37,4 @@ async function insertNewId(id, passwd, nickname) {
     [id, hash.sha256(passwd), nickname]);
 }
 
-module.exports = {select, insert, deleteSql, insertNewId};
+module.exports = {select, insert, insertPost, deleteSql, insertNewId};
