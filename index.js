@@ -153,6 +153,43 @@ app.get('/getPostBybId/:bId', async (req, res)=>{
     res.send(rows);
 })
 
+// 게시글 수정
+app.get('/editPost/:bId', async (req, res)=>{
+    const bId = req.params.bId;
+    if(req.session.userId ? true : false){
+        const rows = await DB.select(`select userId, title, text from post where bId = ${bId}`);
+        if(rows[0].userId === req.session.userId){
+            res.render(`editPost`, {navText:logInOutStr.navStr(req.session.userId ? true : false), title:rows[0].title, text:rows[0].text});
+        }
+        else {
+            res.send(`<script>alert('권한이 없습니다');history.back();</script>`);    
+        }
+    }
+    else {
+        res.send(`<script>alert('권한이 없습니다');history.back();</script>`);
+    }
+})
+
+// 게시글 수정 db에 저장
+app.post('/editPost/:bId', async (req, res)=>{
+    if((req.session.userId ? true : false)===false){
+        res.send(`error: no login`);
+        return;
+    }
+    const bId = req.params.bId;
+    const title = req.body.title;
+    const text = req.body.text;
+    const userId = req.session.userId;
+    const rows = await DB.select(`select userId from post where bId=${bId};`);
+    if(rows[0].userId !== userId){
+        res.send(`wrong person`);
+        return;
+    }
+    await DB.updatePost(title, text, bId);
+    res.send("ok");
+})
+
+// 게시글 삭제
 app.get('/deletePost/:bId', async (req, res)=>{
     const bId = req.params.bId;
     if(req.session.userId ? true : false){

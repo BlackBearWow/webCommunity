@@ -28,6 +28,12 @@ async function insertPost(title, text, userId) {
     [title, text, now, 0, userId]);
 }
 
+async function updatePost(title, text, bId) {
+    const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
+    const [rows, feilds] = await pool.promise().execute(`update jsgame.post set title=?, text=?, postDatetime=? where bId=?;`,
+    [title, text, now, bId]);
+}
+
 async function deleteSql(sql) {
     const [rows, feilds] = await pool.promise().query(sql);
 }
@@ -37,4 +43,4 @@ async function insertNewId(id, passwd, nickname) {
     [id, hash.sha256(passwd), nickname]);
 }
 
-module.exports = {select, insert, insertPost, deleteSql, insertNewId};
+module.exports = {select, insert, insertPost, updatePost, deleteSql, insertNewId};

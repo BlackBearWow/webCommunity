@@ -45,6 +45,9 @@
                 }
             });
         }
+        function editPost() {
+            location.href=`/editPost/${bId}`;
+        }
         function deletePost() {
             $.ajax({
                 url: `/deletePost/${bId}`,
