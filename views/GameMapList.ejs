@@ -1,24 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <html>
 <head>
 	<title>게임 리스트</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
 
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<link rel="shortcut icon" href="https://blackbearwow.github.io/favicon/favicon.ico">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-		body
-		{
-			background-image: url("https://blackbearwow.github.io/image/paper.gif");
-		}
-	</style>
+	
 </head>
 <body>
 	<div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
@@ -26,18 +21,15 @@
         <nav class="my-2 my-md-0 mr-md-3">
             <%- navText %>
         </nav>
-        <a class="btn btn-outline-primary" href="#">Sign up</a>
     </div>
-	<div class="container p-3 my-3 bg-dark text-white">
+	<div class="container-fluid p-3 my-3 border">
 		<h4>크레이지스토리 (크아+메이플)</h4>
-		<ul class="list-group">
-		    <li class="list-group-item list-group-item-action"><a href="중앙사냥터">중앙사냥터</a></li>
-		    <li class="list-group-item list-group-item-action"><a href="서쪽사냥터">서쪽사냥터</a></li>
-		    <li class="list-group-item list-group-item-action"><a href="동쪽사냥터">동쪽사냥터</a></li>
-		    <li class="list-group-item list-group-item-action"><a href="남쪽사냥터">남쪽사냥터</a></li>
-		    <li class="list-group-item list-group-item-action">로그인 상태에서 플레이시 게임이 저장됩니다. 익명 상태에서는 게임이 저장되지 않습니다.</li>
-		    <li class="list-group-item list-group-item-action">게임방법: 스페이스바로 물풍선을 놓고 방향키로 움직이면 됩니다. 모바일에서는 못해요! pc로 해주세요</li>
-		</ul>
+		<p><a href="중앙사냥터">중앙사냥터</a></p>
+		<p><a href="서쪽사냥터">서쪽사냥터</a></p>
+		<p><a href="동쪽사냥터">동쪽사냥터</a></p>
+		<p><a href="남쪽사냥터">남쪽사냥터</a></p>
+		<p>로그인 상태에서 플레이시 게임이 저장됩니다. 익명 상태에서는 게임이 저장되지 않습니다.</p>
+		<p>게임방법: 스페이스바로 물풍선을 놓고 방향키로 움직이면 됩니다. 모바일에서는 못해요! pc로 해주세요</p>
 	</div>
     </body>
 </html>

@@ -40,6 +40,10 @@ async function updatePost(title, text, bId) {
     [title, text, now, bId]);
 }
 
+async function update(sql) {
+    const [rows, feilds] = await pool.promise().query(sql);
+}
+
 async function deleteSql(sql) {
     const [rows, feilds] = await pool.promise().query(sql);
 }
@@ -49,4 +53,4 @@ async function insertNewId(id, passwd, nickname) {
     [id, hash.sha256(passwd), nickname]);
 }
 
-module.exports = {select, insert, insertPost, insertComment, updatePost, deleteSql, insertNewId};
+module.exports = {select, insert, insertPost, insertComment, update, updatePost, deleteSql, insertNewId};

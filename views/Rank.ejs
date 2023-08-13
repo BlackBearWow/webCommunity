@@ -1,22 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
 	<title>mixedGame</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
 
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-		body
-		{
-			background-image: url("https://blackbearwow.github.io/image/paper.gif");
-		}
-	</style>
+	
 </head>
 <body>
 	<div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
@@ -24,16 +19,30 @@
         <nav class="my-2 my-md-0 mr-md-3">
             <%- navText %>
         </nav>
-        <a class="btn btn-outline-primary" href="#">Sign up</a>
     </div>
-	<div class="container p-3 my-3 bg-dark text-white">
+	<div class="container-fluid text-center p-3 my-3">
 		<h4>랭킹</h4>
+		<table class="table table-bordered table-striped-columns">
+			<thead>
+				<th scope="col">#</th>
+				<th scope="col">닉네임</th>
+				<th scope="col">level</th>
+				<th scope="col">exp</th>
+				<th scope="col">배찡~</th>
+			</thead>
+			<tbody>
+				<% for(x in rows) { %>
+				<tr>
+					<th scope="row"><%=parseInt(x)+1%>위</th>
+					<td><%=rows[x].nickname%></td>
+					<td><%=rows[x].level%></td>
+					<td><%=rows[x].exp%></td>
+					<td><img src="/images/bazzi/배찌31.png" alt='배찌'></td>
+				</tr>
+				<% } %>
+			</tbody>
+		</table>
 		<ul class="list-group">
-			<% for(x in rows) { %>
-			<li class="list-group-item list-group-item-action"><a><%=parseInt(x)+1%>위: <%=rows[x].nickname%> level: <%=rows[x].level%> exp: <%=rows[x].exp%></a> <img src="/images/bazzi/배찌31.png" alt='배찌'></li>
-			<% } %>
-			<!--li class="list-group-item list-group-item-action"><a>1위: 짜짬뽕면 level: 232 exp: 245</a> <img src="/images/bazzi/배찌31.png" alt='배찌'></li>
-			<li class="list-group-item list-group-item-action"><a>2위: 무림고수 level: 200 exp: 245</a> <img src="/images/bazzi/배찌32.png" alt='배찌'></li-->
 		</ul>
 	</div>
     </body>

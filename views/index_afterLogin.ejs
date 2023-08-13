@@ -1,22 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
 	<title>mixedGame</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
 
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-		body
-		{
-			background-image: url("https://blackbearwow.github.io/image/paper.gif");
-		}
-	</style>
+	
 </head>
 <body>
 	<div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
@@ -24,21 +19,16 @@
         <nav class="my-2 my-md-0 mr-md-3">
             <%- navText %>
         </nav>
-        <a class="btn btn-outline-primary" href="#">Sign up</a>
     </div>
-	<div class="container p-3 my-3 bg-dark text-white">
+	<div class="container-fluid p-3 my-3 border">
 		<h4>Welcome!</h4>
-		<ul class="list-group">
-			<li class="list-group-item list-group-item-action"><a><%=userId%>님 환영합니다!</a></li>
-		    <li class="list-group-item list-group-item-action">
-                <a>
-                    닉네임: <%= nickname %> <br>level: <%=level%> <br>exp: <%=exp%>
-                    <br>스피드: <%=speed%> <br>물풍선개수: <%=wbLimitQuantity%> 
-                    <br>물줄기: <%=wbLen%> <br>돈: <%=money%>
-                </a>
-                <br><img src="/images/bazzi/배찌31.png" alt='배찌'>
-            </li>
-		</ul>
+		<p><%=userId%>님 환영합니다!</p>
+		<a>
+			닉네임: <%= nickname %> <br>level: <%=level%> <br>exp: <%=exp%>
+			<br>스피드: <%=speed%> <br>물풍선개수: <%=wbLimitQuantity%> 
+			<br>물줄기: <%=wbLen%> <br>돈: <%=money%>
+		</a>
+		<br><img src="/images/bazzi/배찌31.png" alt='배찌'>
 	</div>
     </body>
 </html>

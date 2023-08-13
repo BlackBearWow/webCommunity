@@ -1,22 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
 	<title>게시판</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
 
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-		body
-		{
-			background-image: url("https://blackbearwow.github.io/image/paper.gif");
-		}
-	</style>
     <script>
         $(document).ready(()=>{
             updatePosts();
@@ -34,11 +28,12 @@
                         // 브라우저의 로케일에 따라 한국 시간으로 변환하여 표시
                         const koreaTime = utcDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
 
-                        let text = `<ul class="list-group" onclick="location.href='viewPost/${row.bId}'"><li class="list-group-item list-group-item-action">
-                            <a>${koreaTime}</a>
-                            <a style='color:darkgreen'>${row.title}</a>
-                            <a style='color:darkblue'>[${row.commentNum}]</a>
-                            </li></ul>`;
+						let text= `<tr onclick="location.href='viewPost/${row.bId}'">
+							<td>${row.title}</td>
+							<td>${row.commentNum}</td>
+							<td>${row.nickname}</td>
+							<td scope="row">${koreaTime}</td>
+							</tr>`
                         $('#posts').append(text);
                     })
 			    	console.log(rows);
@@ -56,13 +51,20 @@
         <nav class="my-2 my-md-0 mr-md-3">
             <%- navText %>
         </nav>
-        <a class="btn btn-outline-primary" href="#">Sign up</a>
     </div>
-	<div class="container p-3 my-3 bg-dark text-white" id="posts">
+	<div class="container-fluid p-3 my-3 border">
 		<h4>글 리스트 <input type="button" class="btn btn-success" value="새글쓰기" id="btnLogin" onclick="location.href='/newPost'"></h4>
-		<!--ul class="list-group">
-		    <li class="list-group-item list-group-item-action"><a href="signUp">글입니당1</a></li>
-		</ul-->
+		<table class="table table-bordered table-striped">
+			<thead>
+				<th scope="col">제목</th>
+				<th scope="col">댓글수</th>
+				<th scope="col">닉네임</th>
+				<th scope="col">날짜</th>
+			</thead>
+			<tbody id="posts">
+
+			</tbody>
+		</table>
 	</div>
     </body>
 </html>

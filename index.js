@@ -114,7 +114,7 @@ app.get('/bulletinBoard', async (req, res) => {
 
 // 게시글들 리스트 반환
 app.get('/getPosts', async (req, res) => {
-    const rows = await DB.select(`select bId, title, postDatetime, commentNum from post order by bId desc`);
+    const rows = await DB.select(`select bId, title, postDatetime, commentNum, nickname from post order by bId desc`);
     res.send(rows);
 })
 
@@ -169,7 +169,10 @@ app.get(`/sendComment/:bId`, async (req, res)=>{
         const cText = req.query.cText;
         const userId = req.session.userId;
         const nickname = req.session.nickname;
+        //댓글 삽입
         await DB.insertComment(bId, cText, userId, nickname);
+        //댓글수 증가
+        await DB.update(`update post set commentNum = commentNum + 1 where bId = ${bId};`);
         res.send('ok');
     }
     else
@@ -219,6 +222,25 @@ app.get('/deletePost/:bId', async (req, res)=>{
         const rows = await DB.select(`select userId from post where bId = ${bId}`);
         if(rows[0].userId === req.session.userId) {
             await DB.deleteSql(`delete from post where bId = ${bId}`);
+            res.send('ok');
+        }
+        else res.send('noRight');
+    }
+    else{
+        res.send('noRight');
+    }
+})
+
+// 댓글 삭제
+app.get('/removeComment/:cId', async (req, res)=>{
+    const cId = req.params.cId;
+    const bId = req.query.bId;
+    if(req.session.userId ? true : false){
+        const rows = await DB.select(`select userId from comment where cId = ${cId}`);
+        if(rows[0].userId === req.session.userId) {
+            await DB.deleteSql(`delete from comment where cId = ${cId}`);
+            //댓글수 감소
+            await DB.update(`update post set commentNum = commentNum - 1 where bId = ${bId};`);
             res.send('ok');
         }
         else res.send('noRight');
