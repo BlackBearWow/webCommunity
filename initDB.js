@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const moment = require('moment-timezone');
 const hash = require('./hash');
 const mysql = require('mysql2');
+const DB = require('./db');
 
 const host = '127.0.0.1';
 const port = 3306;
@@ -66,8 +67,10 @@ const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
 insertPostData([`예제 타이틀`, `여기는 내용을 적는 공간입니다`, now, 0, 'admin', '관리자']);
 insertPostData([`예제 타이틀2`, `여기는 내용을 적는 공간입니다2`, now, 0, 'admin', '관리자']);
 
-insertCommentData([1, `댓글이당`, now, 'admin', '관리자']);
-insertCommentData([1, `댓글이당22`, now, 'admin', '관리자']);
+//insertCommentData([1, `댓글이당`, now, 'admin', '관리자']);
+//DB.update(`update post set commentNum = commentNum + 1 where bId = 1;`)
+//insertCommentData([1, `댓글이당22`, now, 'admin', '관리자']);
+//DB.update(`update post set commentNum = commentNum + 1 where bId = 1;`)
 
 // 종료
 connection.end();

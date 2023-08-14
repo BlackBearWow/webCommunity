@@ -4,6 +4,7 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const session = require("express-session");
+const MemoryStore = require('memorystore')(session);
 const DB = require('./db');
 const hash = require('./hash');
 const logInOutStr = require('./logInOutStr');
@@ -17,9 +18,14 @@ app.set('view engine', 'ejs');
 // Function to serve static files
 app.use('/images', express.static('images'));
 
+//room은 새로운 파일로 만들어 따로 관리하자.
+const roomModule = require('./room');
+const room = new roomModule.Room;
+
 // session
 const sessionAge = 1000 * 60 * 10; // 10minutes
-app.use(session({secret: "secretkey", rolling: false, resave: false, saveUninitialized:false, cookie:{maxAge: sessionAge}}))
+let session_store = new MemoryStore();
+app.use(session({secret: "secretkey", rolling: false, resave: false, saveUninitialized:false, store:session_store, cookie:{maxAge: sessionAge}}))
 // session은 로그인 한 유저들만 발급한다. 로그아웃하면 세션을 삭제한다.
 
 // 데코레이션 패턴
@@ -30,13 +36,10 @@ app.get('/', async (req, res) => {
     //로그인 했을 때
     if(req.session.userId) {
         const rows = await DB.select(`select * from account where userId='${req.session.userId}';`);
-        res.render('index_afterLogin', {navText:logInOutStr.navStr(req.session.userId ? true : false), 
-            userId:rows[0].userId, nickname:rows[0].nickname, level:rows[0].level, exp:rows[0].exp, 
-            speed:rows[0].speed, wbLimitQuantity:rows[0].wbLimitQuantity, wbLen:rows[0].wbLen, money:rows[0].money});
+        res.render('index_afterLogin', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
     }
     //로그인 안했을 때
     else {
-        //res.render('sample', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
         res.render('index_beforeLogin', {navText:logInOutStr.navStr(req.session.userId ? true : false)});
     }
 });
@@ -152,14 +155,15 @@ app.get('/getPostBybId/:bId', async (req, res)=>{
     const bId = req.params.bId;
     const rows = await DB.select(`select bId, title, text, postDatetime, commentNum, nickname 
     from post where bId = ${bId}`);
-    res.send(rows);
+    //글쓴이와 현재 세션 닉네임이 같나? 를 보면 된다.
+    res.send([rows, req.session.nickname]);
 })
 
 // 댓글 내용 반환
 app.get(`/getCommentBybId/:bId`, async (req, res)=>{
     const bId = req.params.bId;
     const rows = await DB.select(`select * from comment where bId = ${bId}`);
-    res.send(rows);
+    res.send([rows, req.session.nickname]);
 })
 
 // 댓글 쓰기
@@ -219,9 +223,12 @@ app.post('/editPost/:bId', async (req, res)=>{
 app.get('/deletePost/:bId', async (req, res)=>{
     const bId = req.params.bId;
     if(req.session.userId ? true : false){
-        const rows = await DB.select(`select userId from post where bId = ${bId}`);
+        let rows = await DB.select(`select userId from post where bId = ${bId}`);
         if(rows[0].userId === req.session.userId) {
+            // 게시글 삭제
             await DB.deleteSql(`delete from post where bId = ${bId}`);
+            // 게시글 댓글들 삭제
+            rows = await DB.select(`delete from comment where bId = ${bId};`)
             res.send('ok');
         }
         else res.send('noRight');
@@ -250,6 +257,23 @@ app.get('/removeComment/:cId', async (req, res)=>{
     }
 })
 
+// 내 정보 화면
+app.get('/myInfo', async (req, res)=>{
+    //로그인 했을 때
+    if(req.session.userId) {
+        const rows = await DB.select(`select * from account where userId='${req.session.userId}';`);
+        res.render('myInfo', {navText:logInOutStr.navStr(req.session.userId ? true : false), 
+            userId:rows[0].userId, nickname:rows[0].nickname, level:rows[0].level, exp:rows[0].exp, 
+            speed:rows[0].speed, wbLimitQuantity:rows[0].wbLimitQuantity, wbLen:rows[0].wbLen, money:rows[0].money});
+    }
+    //로그인 안했을 때
+    else {
+        res.send(`<script>alert('로그인 후 이용해주세요');location.href='/';</script>`);
+    }
+})
+
 server.listen(8880, () => {
     console.log('listening on *:8880');
 });
+
+require('./socket')(server, session_store, room);

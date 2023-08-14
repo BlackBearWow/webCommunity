@@ -1,34 +1,100 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
+
 <head>
 	<title>mixedGame</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
-
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+		crossorigin="anonymous"></script>
+	<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	
+	<script>
+		$(document).ready(()=>{
+		})
+
+		let socket = io();
+		// 채팅방 접속중이라는것을 알림
+		socket.emit("indexPage");
+		// 채팅방 접속중 사람들을 알려달라.
+		socket.emit("request onlineChatNicknames")
+		// 채팅방 방 리스트를 가져다 달라.
+		socket.emit("request room List");
+
+		socket.on("response onlineChatNicknames", (nicknames)=>{
+			$('#onlineChatNicknames').empty();
+			Array.from(nicknames).forEach((nickname, index)=>{
+				$('#onlineChatNicknames').append(`<p>${nickname}</p>`);
+			})
+		})
+		socket.on("response room List", (data)=>{
+
+		})
+		function showMakeRoom(){
+			$('#showChat').hide();
+			$('#showMakeRoom').show();
+		}
+		function showChat(){
+			$('#showChat').show();
+			$('#showMakeRoom').hide();
+		}
+	</script>
 </head>
+
 <body>
 	<div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
-        <a class="my-0 mr-md-auto font-weight-normal text-dark" href="/">Home</a>
-        <nav class="my-2 my-md-0 mr-md-3">
-            <%- navText %>
-        </nav>
-    </div>
-	<div class="container-fluid p-3 my-3 border">
-		<h4>Welcome!</h4>
-		<p><%=userId%>님 환영합니다!</p>
-		<a>
-			닉네임: <%= nickname %> <br>level: <%=level%> <br>exp: <%=exp%>
-			<br>스피드: <%=speed%> <br>물풍선개수: <%=wbLimitQuantity%> 
-			<br>물줄기: <%=wbLen%> <br>돈: <%=money%>
-		</a>
-		<br><img src="/images/bazzi/배찌31.png" alt='배찌'>
+		<a class="my-0 mr-md-auto font-weight-normal text-dark" href="/">Home</a>
+		<nav class="my-2 my-md-0 mr-md-3">
+			<%- navText %>
+		</nav>
 	</div>
-    </body>
+	<div class="row">
+		<div class="col-3 border">
+			<h4>접속중</h4>
+			<hr>
+			<div id="onlineChatNicknames">
+				<p>김치찌개</p>
+				<p>관리자</p>
+				<p>고리</p>
+			</div>
+			<hr>
+			<h4>
+				채팅방
+				<input type="button" class="btn btn-success" value="방만들기" onclick="showMakeRoom()">	
+				<input type="button" class="btn btn-success" value="방참여하기" onclick="showChat()">	
+			</h4>
+			<hr>
+			<div id="chatRoomNames">
+				<p>어서와</p>
+			</div>
+		</div>
+		<div class="col border" id="showMakeRoom">
+			<h3>채팅방 만들기</h3>
+			<hr>
+			<label for="pwd">이름:</label>
+		    <input type="text" id="chatRoomName" maxlength="20">
+			<input type="button" class="btn btn-success" value="만들기" id="btnMakeChatRoom">
+		</div>
+		<div class="col border" id="showChat">
+			<h4>채팅</h4>
+			<hr>
+			<ul class="list-group">
+				<li class="list-group-item">채팅1</li>
+				<li class="list-group-item">채팅2</li>
+				<li class="list-group-item">채팅3</li>
+				<li class="list-group-item">채팅4</li>
+			</ul>
+			<hr>
+			<input type="text" class="form-control" id="chat" placeholder="채팅" maxlength="20" required>
+        	<input type="button" class="btn btn-success" value="보내기" id="sendChat" onclick="sendChat()">
+		</div>
+	</div>
+</body>
+
 </html>

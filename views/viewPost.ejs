@@ -25,7 +25,7 @@
                 type: "get",
                 data: {
                 },
-                success: function (rows) {
+                success: function ([rows, nickname]) {
                     const row = rows[0];
                     console.log(row);
                     // UTC 시간을 JavaScript Date 객체로 변환
@@ -34,8 +34,11 @@
                     const koreaTime = utcDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
                     $('#postTime').text(koreaTime);
                     $('#postTitle').text(`제목: ${row.title}`);
+                    $('#postUser').text(`게시자: ${row.nickname}`);
                     $('#postText').text(row.text);
-                    $('#postUser').text(`게시자: ${row.nickname}`)
+                    if(row.nickname === nickname){
+                        $('.postButton').show();
+                    }
                 },
                 error: function (error) {
                     console.log(error);
@@ -70,10 +73,13 @@
                 type: "get",
                 data: {
                 },
-                success: function (rows) {
+                success: function ([rows, nickname]) {
                     rows.forEach((row, index, arr)=>{
-                        $('#comments').append(`<li class="list-group-item list-group-item-action">${row.cText}
-                            <input type="button" class="btn btn-sm btn-success" value="삭제" onclick="removeComment(${row.cId})"></li>`);
+                        if(row.nickname === nickname)
+                            $('#comments').append(`<li class="list-group-item list-group-item-action">${row.cText}
+                                <input type="button" class="btn btn-sm btn-success commentRemoveBtn" value="삭제" onclick="removeComment(${row.cId})"></li>`);
+                        else 
+                            $('#comments').append(`<li class="list-group-item list-group-item-action">${row.cText}</li>`);
                     })
                 },
                 error: function (error) {
@@ -91,6 +97,7 @@
                 success: function (msg) {
                     if(msg === "ok") {
                         $('#comments').empty();
+                        $('#comment').val('');
                         updateComment();
                     }
                     else {
@@ -132,10 +139,10 @@
     <div class="container-fluid p-3 my-2 border" id="posts">
         <h6 id="postUser">게시자</h6>
         <h5 id="postTime">글 작성 시간</h5>
-        <h4 id="postTitle">글 리스트</h4>
-        <p class="lead mb-4" id="postText"></p>
-        <input type="button" class="btn btn-success" value="수정하기" id="btnLogin" onclick="editPost()">
-        <input type="button" class="btn btn-success" value="삭제하기" id="btnLogin" onclick="deletePost()">
+        <h4 id="postTitle">글 타이틀</h4>
+        <p class="lead mb-4" id="postText">글 내용</p>
+        <input type="button" class="btn btn-success postButton" value="수정하기" style="display:none" onclick="editPost()">
+        <input type="button" class="btn btn-success postButton" value="삭제하기" style="display:none" onclick="deletePost()">
     </div>
     <div class="container-fluid p-3 my-2 border">
         <h6>댓글</h6>
