@@ -16,9 +16,32 @@
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<script>
-		$(document).ready(()=>{
+		// 현재 내가 어느 채팅방인가. 다른 채팅방에 들어갈 때, 현재 방을 나가기 위해 사용하는 변수
+		let chatRoomKey=false;
+		$(document).ready(() => {
+			$("#chatText").keydown(function(key){
+	  			if(key.keyCode==13)
+	  			{
+	  				sendChat();
+	  			}
+	  		});
+			$('#btnMakeChatRoom').click(() => {
+				$.ajax({
+					url: "/makeNewChatRoom",
+					type: "post",
+					data: {
+						chatRoomName:$('#chatRoomName').val()
+					},
+					success: function (key) {
+						console.log(key);
+						accessRoom(key, $('#chatRoomName').val());
+					},
+					error: function (error) {
+						console.log(error);
+					}
+				});
+			});
 		})
-
 		let socket = io();
 		// 채팅방 접속중이라는것을 알림
 		socket.emit("indexPage");
@@ -27,22 +50,53 @@
 		// 채팅방 방 리스트를 가져다 달라.
 		socket.emit("request room List");
 
-		socket.on("response onlineChatNicknames", (nicknames)=>{
+		socket.on('disconnect', ()=>{
+			alert('연결이 끊겼습니다');
+			location.href='/';
+		})
+		socket.on("response onlineChatNicknames", (nicknames) => {
 			$('#onlineChatNicknames').empty();
-			Array.from(nicknames).forEach((nickname, index)=>{
+			Array.from(nicknames).forEach((nickname, index) => {
 				$('#onlineChatNicknames').append(`<p>${nickname}</p>`);
 			})
 		})
-		socket.on("response room List", (data)=>{
-
+		socket.on("response room List", (list) => {
+			$('#chatRoomNames').empty();
+			list.forEach((val)=>{
+				// val은 [key,Name,Population] 형태.
+				$('#chatRoomNames').append(`<tr onclick="accessRoom('${val[0]}', '${val[1]}')"><td scope="row">${val[2]}</td><td>${val[1]}</td></tr>`);
+			})
 		})
-		function showMakeRoom(){
+		socket.on('chat message', (msg)=>{
+			$('#chatting').append(`<li class="list-group-item">${msg}</li>`);
+		})
+		function exitCurrentRoom() {
+			if(chatRoomKey){
+				socket.emit("exitRoom", chatRoomKey);
+				chatRoomKey = false;
+			}
+		}
+		function showMakeRoom() {
 			$('#showChat').hide();
 			$('#showMakeRoom').show();
+			//현재 참여중인 채팅방이 있다면, 채팅방을 나간다.
+			exitCurrentRoom();
 		}
-		function showChat(){
+		function showChat() {
 			$('#showChat').show();
 			$('#showMakeRoom').hide();
+		}
+		function accessRoom(key, name) {
+			showChat();
+			exitCurrentRoom();
+			socket.emit("whatIsMyRoom", key);
+			chatRoomKey = key;
+			$('#chatRoomTitle').text(name);
+			$('#chatting').empty();
+		}
+		function sendChat() {
+			socket.emit('chat message', chatRoomKey, $('#chatText').val());
+			$('#chatText').val(``);
 		}
 	</script>
 </head>
@@ -66,33 +120,36 @@
 			<hr>
 			<h4>
 				채팅방
-				<input type="button" class="btn btn-success" value="방만들기" onclick="showMakeRoom()">	
-				<input type="button" class="btn btn-success" value="방참여하기" onclick="showChat()">	
+				<input type="button" class="btn btn-success" value="방만들기" onclick="showMakeRoom()">
 			</h4>
-			<hr>
-			<div id="chatRoomNames">
-				<p>어서와</p>
+			<div>
+				<table class="table table-bordered table-striped">
+					<thead>
+						<th scope="col">인원</th>
+						<th scope="col">이름</th>
+					</thead>
+					<tbody id="chatRoomNames">
+
+					</tbody>
+				</table>
 			</div>
 		</div>
 		<div class="col border" id="showMakeRoom">
 			<h3>채팅방 만들기</h3>
 			<hr>
-			<label for="pwd">이름:</label>
-		    <input type="text" id="chatRoomName" maxlength="20">
+			<label for="chatRoomName">이름:</label>
+			<input type="text" id="chatRoomName" maxlength="20">
 			<input type="button" class="btn btn-success" value="만들기" id="btnMakeChatRoom">
 		</div>
-		<div class="col border" id="showChat">
-			<h4>채팅</h4>
+		<div class="col border" id="showChat" style="display:none">
+			<h4 id="chatRoomTitle">채팅</h4>
 			<hr>
-			<ul class="list-group">
-				<li class="list-group-item">채팅1</li>
-				<li class="list-group-item">채팅2</li>
-				<li class="list-group-item">채팅3</li>
-				<li class="list-group-item">채팅4</li>
+			<ul class="list-group" id="chatting">
+				<li class="list-group-item">채팅예시</li>
 			</ul>
 			<hr>
-			<input type="text" class="form-control" id="chat" placeholder="채팅" maxlength="20" required>
-        	<input type="button" class="btn btn-success" value="보내기" id="sendChat" onclick="sendChat()">
+			<input type="text" class="form-control" id="chatText" placeholder="채팅" maxlength="20" required>
+			<input type="button" class="btn btn-success" value="보내기" id="sendChat" onclick="sendChat()">
 		</div>
 	</div>
 </body>

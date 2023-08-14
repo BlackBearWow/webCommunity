@@ -25,7 +25,7 @@ const room = new roomModule.Room;
 // session
 const sessionAge = 1000 * 60 * 10; // 10minutes
 let session_store = new MemoryStore();
-app.use(session({secret: "secretkey", rolling: false, resave: false, saveUninitialized:false, store:session_store, cookie:{maxAge: sessionAge}}))
+app.use(session({secret: "secretkey", rolling: true, resave: false, saveUninitialized:false, store:session_store, cookie:{maxAge: sessionAge}}))
 // session은 로그인 한 유저들만 발급한다. 로그아웃하면 세션을 삭제한다.
 
 // 데코레이션 패턴
@@ -270,6 +270,13 @@ app.get('/myInfo', async (req, res)=>{
     else {
         res.send(`<script>alert('로그인 후 이용해주세요');location.href='/';</script>`);
     }
+})
+
+// 새 채팅방 만들기
+app.post('/makeNewChatRoom', (req, res)=>{
+    const chatRoomName = req.body.chatRoomName;
+    const key = room.makeNewRoom(chatRoomName);
+    res.send(key);
 })
 
 server.listen(8880, () => {
