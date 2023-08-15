@@ -275,12 +275,20 @@ app.get('/myInfo', async (req, res)=>{
 // 새 채팅방 만들기
 app.post('/makeNewChatRoom', (req, res)=>{
     const chatRoomName = req.body.chatRoomName;
-    const key = room.makeNewRoom(chatRoomName);
+    const key = room.makeNewChatRoom(chatRoomName);
     res.send(key);
 })
 
-server.listen(8880, () => {
-    console.log('listening on *:8880');
+// 새 크아방 만들기
+// room에 maxPopulation=2로 추가 설정.
+app.post('/makeNewChatCARoom', (req, res)=>{
+    const chatCARoomName = req.body.chatCARoomName;
+    const key = room.makeNewCAChatRoom(chatCARoomName);
+    res.send(key);
+})
+
+server.listen(10101, () => {
+    console.log('listening on *:10101');
 });
 
 require('./socket')(server, session_store, room);

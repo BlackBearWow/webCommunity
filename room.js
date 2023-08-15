@@ -5,7 +5,10 @@ class Room {
     constructor() {
         //key는 방 접속id로, 방을 구분짓기 위한 것으로만 사용한다.
         this.keys = new Set();
-        this.keyNamePopulation = new Array();
+        //{key, name, population}으로 구성됨.
+        this.chatRoomData = new Array();
+        //{key, name, population, maxPopulation}으로 구성됨.
+        this.chatCARoomData = new Array();
         //index페이지에 어떤 사람들이 있는지 저장하는 용도
         this.indexNicknames = new Set();
     }
@@ -25,40 +28,65 @@ class Room {
             randomString = this.makeDistinctKey();
         return randomString;
     }
-    makeNewRoom(name) {
+    makeNewChatRoom(name) {
         let key = this.makeDistinctKey();
         this.keys.add(key);
-        this.keyNamePopulation.push([key, name, 0]);
-
+        this.chatRoomData.push({key, name, population:0});
+        return key;
+    }
+    makeNewCAChatRoom(name) {
+        let key = this.makeDistinctKey();
+        this.keys.add(key);
+        this.chatCARoomData.push({key, name, population:0, maxPopulation:2});
         return key;
     }
     addPopulation(key) {
-        for(let i=0; i<this.keyNamePopulation.length; i++) {
-            if(this.keyNamePopulation[i][0] == key) {
-                this.keyNamePopulation[i][2]++; break;
+        for(let i=0; i<this.chatRoomData.length; i++) {
+            if(this.chatRoomData[i].key == key) {
+                this.chatRoomData[i].population++; break;
+            }
+        }
+        for(let i=0; i<this.chatCARoomData.length; i++) {
+            if(this.chatCARoomData[i].key == key) {
+                this.chatCARoomData[i].population++; break;
             }
         }
     }
     subPopulation(key) {
-        for(let i=0; i<this.keyNamePopulation.length; i++) {
-            if(this.keyNamePopulation[i][0] == key) {
-                this.keyNamePopulation[i][2]--;
-                if(this.keyNamePopulation[i][2] <= 0)
-                    this.deleteRoom(key);
+        for(let i=0; i<this.chatRoomData.length; i++) {
+            if(this.chatRoomData[i].key == key) {
+                this.chatRoomData[i].population--;
+                if(this.chatRoomData[i].population <= 0)
+                    this.deleteChatRoom(key);
+                break;
+            }
+        }
+        for(let i=0; i<this.chatCARoomData.length; i++) {
+            if(this.chatCARoomData[i].key == key) {
+                this.chatCARoomData[i].population--;
+                if(this.chatCARoomData[i].population <= 0)
+                    this.deleteCAChatRoom(key);
                 break;
             }
         }
     }
-    deleteRoom(key) {
+    deleteChatRoom(key) {
         this.keys.delete(key);
-        this.keyNamePopulation = this.keyNamePopulation.filter((v)=> v[0] != key);
+        this.chatRoomData = this.chatRoomData.filter((v)=> v.key != key);
     }
-    getRoomList() {
-        return this.keyNamePopulation;
+    deleteCAChatRoom(key) {
+        this.keys.delete(key);
+        this.chatCARoomData = this.chatCARoomData.filter((v)=> v.key != key);
     }
-    getRoomName(key) {
-        let keyNamePopulation = this.keyNamePopulation.find((val)=>val[0]===key);
-        return keyNamePopulation[1];
+    getChatRoomList() {
+        return this.chatRoomData;
+    }
+    getCAChatRoomList() {
+        return this.chatCARoomData;
+    }
+    getCARoomPopulation(key) {
+        let data = this.chatCARoomData.find((val)=>val.key===key);
+        return data.population;
     }
 }
 

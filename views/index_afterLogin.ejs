@@ -18,10 +18,16 @@
 	<script>
 		// 현재 내가 어느 채팅방인가. 다른 채팅방에 들어갈 때, 현재 방을 나가기 위해 사용하는 변수
 		let chatRoomKey = false;
+		let CAChatRoomKey = false;
 		$(document).ready(() => {
 			$("#chatText").keydown(function (key) {
 				if (key.keyCode == 13) {
 					sendChat();
+				}
+			});
+			$("#CAChatText").keydown(function (key) {
+				if (key.keyCode == 13) {
+					sendCAChat();
 				}
 			});
 			$('#btnMakeChatRoom').click(() => {
@@ -33,7 +39,24 @@
 					},
 					success: function (key) {
 						console.log(key);
-						accessRoom(key, $('#chatRoomName').val());
+						accessChatRoom(key, $('#chatRoomName').val());
+					},
+					error: function (error) {
+						console.log(error);
+					}
+				});
+			});
+			$('#btnMakeChatCARoom').click(() => {
+				//크아방 만들기 버튼 눌렀다면
+				$.ajax({
+					url: "/makeNewChatCARoom",
+					type: "post",
+					data: {
+						chatCARoomName: $('#chatCARoomName').val()
+					},
+					success: function (key) {
+						console.log(key);
+						accessCAChatRoom(key, $('#chatCARoomName').val());
 					},
 					error: function (error) {
 						console.log(error);
@@ -47,11 +70,16 @@
 		// 채팅방 접속중 사람들을 알려달라.
 		socket.emit("request onlineChatNicknames")
 		// 채팅방 방 리스트를 가져다 달라.
-		socket.emit("request room List");
+		socket.emit("request chatRoomList");
+		// 크아 채팅방 리스트를 가져다 달라.
+		socket.emit("request CAChatRoomList");
 
 		socket.on('disconnect', () => {
 			alert('연결이 끊겼습니다');
 			location.href = '/';
+		})
+		socket.on('alert', (msg)=>{
+			alert(msg);
 		})
 		socket.on("response onlineChatNicknames", (nicknames) => {
 			$('#onlineChatNicknames').empty();
@@ -66,16 +94,25 @@
 	</div>`);
 			})
 		})
-		socket.on("response room List", (list) => {
+		socket.on("response chatRoomList", (list) => {
 			$('#chatRoomNames').empty();
 			list.forEach((val) => {
-				// val은 [key,Name,Population] 형태.
-				$('#chatRoomNames').append(`<tr onclick="accessRoom('${val[0]}', '${val[1]}')"><td scope="row">${val[2]}</td><td>${val[1]}</td></tr>`);
+				$('#chatRoomNames').append(`<tr onclick="accessChatRoom('${val.key}', '${val.name}')"><td scope="row">${val.population}</td><td>${val.name}</td></tr>`);
+			})
+		})
+		socket.on("response CAChatRoomList", (list) => {
+			$('#CARoomNames').empty();
+			list.forEach((val) => {
+				$('#CARoomNames').append(`<tr onclick="accessCAChatRoom('${val.key}', '${val.name}')"><td scope="row">${val.population}</td><td>${val.name}</td></tr>`);
 			})
 		})
 		socket.on('chat message', (msg) => {
 			$('#chatting').append(`<li class="list-group-item">${msg}</li>`);
 			$('#showChat').scrollTop($('#showChat')[0].scrollHeight);
+		})
+		socket.on('CAChat message', (msg) => {
+			$('#CAChatting').append(`<li class="list-group-item">${msg}</li>`);
+			$('#showCAChat').scrollTop($('#showCAChat')[0].scrollHeight);
 		})
 		socket.on('inviteChatRoom', (who, key, name) => {
 			//data는 who, key, name으로 구성되어야 한다.
@@ -83,48 +120,94 @@
         <div class="toast-body">
             ${who}이/가 '${name}' 채팅방에 초대했습니다.
             <div class="mt-2 pt-2 border-top">
-                <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" onclick="accessRoom('${key}', '${name}');">수락</button>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" onclick="accessChatRoom('${key}', '${name}');">수락</button>
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">거절</button>
             </div>
         </div>
     </div>`);
 		})
+		socket.on('inviteCAChatRoom', (who, key, name) => {
+			//data는 who, key, name으로 구성되어야 한다.
+			$('#toasts').append(`<div id="liveToast" class="toast fade show" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-body">
+            ${who}이/가 '${name}' 채팅방에 초대했습니다.
+            <div class="mt-2 pt-2 border-top">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" onclick="accessCAChatRoom('${key}', '${name}');">수락</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">거절</button>
+            </div>
+        </div>
+    </div>`);
+		})
+		socket.on('CAChatRoomJoinSucess', (key, name)=>{
+			exitCurrentRoom();
+			showCAChat();
+			CAChatRoomKey = key;
+			$('#chatCARoomTitle').text(name);
+			$('#CAChatting').empty();
+		})
 		function inviteChatRoom(nickname) {
-			if (!chatRoomKey) {
+			if (!chatRoomKey && !CAChatRoomKey) {
 				alert('현재 채팅방에 참여하지 않았습니다.');
-				return;
 			}
-			socket.emit('inviteChatRoom', nickname, chatRoomKey, $('#chatRoomTitle').html());
-			$('#chatting').append(`<li class="list-group-item">${nickname}을/를 초대했습니다.</li>`);
+			else if (chatRoomKey) {
+				socket.emit('inviteChatRoom', nickname, chatRoomKey, $('#chatRoomTitle').html());
+				$('#chatting').append(`<li class="list-group-item">${nickname}을/를 초대했습니다.</li>`);
+			}
+			else if (CAChatRoomKey) {
+				socket.emit('inviteCAChatRoom', nickname, CAChatRoomKey, $('#chatCARoomTitle').html());
+				$('#CAChatting').append(`<li class="list-group-item">${nickname}을/를 초대했습니다.</li>`);
+			}
 		}
 		function exitCurrentRoom() {
 			if (chatRoomKey) {
 				socket.emit("exitRoom", chatRoomKey);
 				chatRoomKey = false;
 			}
+			else if (CAChatRoomKey) {
+				socket.emit("exitRoom", CAChatRoomKey);
+				CAChatRoomKey = false;
+			}
 		}
 		function showMakeRoom() {
-			$('#showChat').hide();
+			$('.rightDiv').hide();
 			$('#showMakeRoom').show();
 			//현재 참여중인 채팅방이 있다면, 채팅방을 나간다.
 			exitCurrentRoom();
 		}
-		function showChat() {
-			$('#showChat').show();
-			$('#showMakeRoom').hide();
+		function showMakeCARoom() {
+			$('.rightDiv').hide();
+			$('#showMakeCARoom').show();
+			exitCurrentRoom();
 		}
-		function accessRoom(key, name) {
+		function showChat() {
+			$('.rightDiv').hide();
+			$('#showChat').show();
+		}
+		function showCAChat() {
+			$('.rightDiv').hide();
+			$('#showCAChat').show();
+		}
+		function accessChatRoom(key, name) {
 			if (key === chatRoomKey) return;
 			showChat();
 			exitCurrentRoom();
-			socket.emit("whatIsMyRoom", key);
+			socket.emit("joinChatRoom", key);
 			chatRoomKey = key;
 			$('#chatRoomTitle').text(name);
 			$('#chatting').empty();
 		}
+		function accessCAChatRoom(key, name) {
+			if (key === CAChatRoomKey) return;
+			socket.emit("joinCAChatRoom", key, name);
+			//성공: CAChatRoomJoinSucess, 실패: alert
+		}
 		function sendChat() {
 			socket.emit('chat message', chatRoomKey, $('#chatText').val());
 			$('#chatText').val(``);
+		}
+		function sendCAChat() {
+			socket.emit('CAChat message', CAChatRoomKey, $('#CAChatText').val());
+			$('#CAChatText').val(``);
 		}
 	</script>
 </head>
@@ -159,19 +242,31 @@
 							<th scope="col">이름</th>
 						</thead>
 						<tbody id="chatRoomNames">
-
 						</tbody>
 					</table>
 				</div>
+				<hr>
+				<h4>
+					크아방
+					<input type="button" class="btn btn-success" value="크아방만들기" onclick="showMakeCARoom()">
+				</h4>
+				<table class="table table-bordered table-striped">
+					<thead>
+						<th scope="col">인원</th>
+						<th scope="col">이름</th>
+					</thead>
+					<tbody id="CARoomNames">
+					</tbody>
+				</table>
 			</div>
-			<div class="col border" id="showMakeRoom">
+			<div class="col border rightDiv" id="showMakeRoom">
 				<h3>채팅방 만들기</h3>
 				<hr>
 				<label for="chatRoomName">이름:</label>
 				<input type="text" id="chatRoomName" maxlength="20">
 				<input type="button" class="btn btn-success" value="만들기" id="btnMakeChatRoom">
 			</div>
-			<div class="col border mh-100 overflow-auto" id="showChat" style="display:none;">
+			<div class="col border rightDiv mh-100 overflow-auto" id="showChat" style="display:none;">
 				<h4 id="chatRoomTitle">채팅방이름</h4>
 				<hr>
 				<ul class="list-group" id="chatting">
@@ -180,6 +275,24 @@
 				<hr>
 				<input type="text" class="form-control" id="chatText" placeholder="채팅" maxlength="20" required>
 				<input type="button" class="btn btn-success" value="보내기" id="sendChat" onclick="sendChat()">
+			</div>
+			<div class="col border rightDiv" id="showMakeCARoom" style="display:none;">
+				<h3>크레이지아케이드 방 만들기</h3>
+				<hr>
+				<label for="chatCARoomName">이름:</label>
+				<input type="text" id="chatCARoomName" maxlength="20">
+				<input type="button" class="btn btn-success" value="크아방 만들기" id="btnMakeChatCARoom">
+			</div>
+			<div class="col border rightDiv mh-100 overflow-auto" id="showCAChat" style="display:none;">
+				<h4>크아방</h4>
+				<h4 id="chatCARoomTitle">크아채팅방이름</h4>
+				<hr>
+				<ul class="list-group" id="CAChatting">
+					<li class="list-group-item">크아채팅예시</li>
+				</ul>
+				<hr>
+				<input type="text" class="form-control" id="CAChatText" placeholder="채팅" maxlength="20" required>
+				<input type="button" class="btn btn-success" value="보내기" id="sendChat" onclick="sendCAChat()">
 			</div>
 		</div>
 		<div id="toasts" class="toast-container bottom-0 end-0 p-2">
