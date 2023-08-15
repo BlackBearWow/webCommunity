@@ -17,10 +17,15 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             if (sessionID) {
                 session_store.get(sessionID, function (err, session) {
                     socket.nickname=session.nickname;
+                    //초대메시지를 받기 위해 자신의 닉네임 room에 join한다.
+                    socket.join(socket.nickname);
                     room.addNewNicknameAtIndex(session.nickname);
                     io.to('index').emit('response onlineChatNicknames', room.getIndexNicknames());
                 })
             }
+        });
+        socket.on('inviteChatRoom', (nickname, key, name)=>{
+            socket.to(nickname).emit('inviteChatRoom', socket.nickname, key, name);
         });
         socket.on('request onlineChatNicknames', () => {
             socket.emit('response onlineChatNicknames', room.getIndexNicknames());
@@ -32,8 +37,8 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             room.subPopulation(key);
             socket.leave(key);
             io.to('index').emit('response room List', room.getRoomList());
+            io.to(key).emit('chat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
         });
-
         socket.on('chat message', (key, msg) => {
             io.to(key).emit('chat message', `${socket.nickname}: ${msg}`);
         });
@@ -41,6 +46,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             socket.join(key);
             room.addPopulation(key);
             io.to('index').emit('response room List', room.getRoomList());
+            io.to(key).emit('chat message', `${socket.nickname}이/가 채팅방에 참여했습니다.`);
         });
         socket.on('disconnecting', () => {
             for (const r of socket.rooms) {
@@ -49,8 +55,10 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
                     room.deleteNicknameAtIndex(socket.nickname);
                     io.to('index').emit('response onlineChatNicknames', room.getIndexNicknames());
                 }
-                if (r != socket.id)
+                else if (r != socket.id) {
                     room.subPopulation(r);
+                    io.to(r).emit('chat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
+                }
             }
         });
         socket.on('disconnect', () => {
