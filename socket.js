@@ -39,13 +39,18 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
         socket.on('request CAChatRoomList', () => {
             socket.emit('response CAChatRoomList', room.getCAChatRoomList());
         });
-        socket.on('exitRoom', (key)=>{
-            room.subPopulation(key);
+        socket.on('exitChatRoom', (key)=>{
+            room.subChatPopulation(key);
             socket.leave(key);
             io.to('index').emit('response chatRoomList', room.getChatRoomList());
-            io.to('index').emit('response CAChatRoomList', room.getCAChatRoomList());
             io.to(key).emit('chat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
-            io.to(key).emit('CAChat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
+        });
+        socket.on('exitCAChatRoom', (key)=>{
+            room.subCAChatPopulation(key, socket.nickname);
+            socket.leave(key);
+            io.to('index').emit('response CAChatRoomList', room.getCAChatRoomList());
+            //io.to(key).emit('CAChat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
+            io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
         });
         socket.on('chat message', (key, msg) => {
             io.to(key).emit('chat message', `${socket.nickname}: ${msg}`);
@@ -55,7 +60,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
         });
         socket.on("joinChatRoom", (key) => {
             socket.join(key);
-            room.addPopulation(key);
+            room.addChatPopulation(key);
             io.to('index').emit('response chatRoomList', room.getChatRoomList());
             io.to(key).emit('chat message', `${socket.nickname}이/가 채팅방에 참여했습니다.`);
         });
@@ -67,12 +72,19 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             //아니라면
             else {
                 socket.join(key);
-                room.addPopulation(key);
+                room.addCAChatPopulationInfo(key, socket.nickname);
                 socket.emit('CAChatRoomJoinSucess', key, name);
                 io.to('index').emit('response CAChatRoomList', room.getCAChatRoomList());
-                io.to(key).emit('CAChat message', `${socket.nickname}이/가 채팅방에 참여했습니다.`);
+                //io.to(key).emit('CAChat message', `${socket.nickname}이/가 채팅방에 참여했습니다.`);
+                io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
             }
         });
+        socket.on('iAmReady', (key)=>{
+            //room에 내가 ready=true로 한다.
+            if(room.CAReady(key, socket.nickname)=='all ready')
+                io.to(key).emit('gameStart');
+            io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
+        })
         socket.on('disconnecting', () => {
             for (const r of socket.rooms) {
                 //인덱스페이지에서 나가면 집합에서 제외한다.
@@ -81,13 +93,16 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
                     io.to('index').emit('response onlineChatNicknames', room.getIndexNicknames());
                 }
                 else if (r != socket.id) {
-                    room.subPopulation(r);
+                    room.subChatPopulation(r);
+                    room.subCAChatPopulation(r, socket.nickname);
                     io.to(r).emit('chat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
+                    io.to(r).emit('CARoomInfo', room.getCARoomInfo(r));
                 }
             }
         });
         socket.on('disconnect', () => {
             io.to('index').emit('response chatRoomList', room.getChatRoomList());
+            io.to('index').emit('response CAChatRoomList', room.getCAChatRoomList());
         });
     });
 };

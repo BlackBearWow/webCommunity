@@ -7,7 +7,7 @@ class Room {
         this.keys = new Set();
         //{key, name, population}으로 구성됨.
         this.chatRoomData = new Array();
-        //{key, name, population, maxPopulation}으로 구성됨.
+        //{key, name, population, maxPopulation, info}으로 구성됨. info는 배열로, {nickname, ready}
         this.chatCARoomData = new Array();
         //index페이지에 어떤 사람들이 있는지 저장하는 용도
         this.indexNicknames = new Set();
@@ -37,22 +37,25 @@ class Room {
     makeNewCAChatRoom(name) {
         let key = this.makeDistinctKey();
         this.keys.add(key);
-        this.chatCARoomData.push({key, name, population:0, maxPopulation:2});
+        this.chatCARoomData.push({key, name, population:0, maxPopulation:2, info:new Array()});
         return key;
     }
-    addPopulation(key) {
+    addChatPopulation(key) {
         for(let i=0; i<this.chatRoomData.length; i++) {
             if(this.chatRoomData[i].key == key) {
                 this.chatRoomData[i].population++; break;
             }
         }
+    }
+    addCAChatPopulationInfo(key, nickname) {
         for(let i=0; i<this.chatCARoomData.length; i++) {
             if(this.chatCARoomData[i].key == key) {
+                this.chatCARoomData[i].info.push({nickname, ready:false});
                 this.chatCARoomData[i].population++; break;
             }
         }
     }
-    subPopulation(key) {
+    subChatPopulation(key) {
         for(let i=0; i<this.chatRoomData.length; i++) {
             if(this.chatRoomData[i].key == key) {
                 this.chatRoomData[i].population--;
@@ -61,12 +64,36 @@ class Room {
                 break;
             }
         }
+    }
+    subCAChatPopulation(key, nickname) {
         for(let i=0; i<this.chatCARoomData.length; i++) {
             if(this.chatCARoomData[i].key == key) {
                 this.chatCARoomData[i].population--;
+                this.chatCARoomData[i].info = this.chatCARoomData[i].info.filter((v)=>v.nickname != nickname);
                 if(this.chatCARoomData[i].population <= 0)
                     this.deleteCAChatRoom(key);
                 break;
+            }
+        }
+    }
+    CAReady(key, nickname) {
+        for(let i=0; i<this.chatCARoomData.length; i++) {
+            if(this.chatCARoomData[i].key == key) {
+                for(let k=0; k<this.chatCARoomData[i].info.length; k++) {
+                    if(this.chatCARoomData[i].info[k].nickname === nickname) {
+                        this.chatCARoomData[i].info[k].ready=true; 
+                        if(this.chatCARoomData[i].info.every((val)=>val.ready==true)) return 'all ready';
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+    getCARoomInfo(key) {
+        for(let i=0; i<this.chatCARoomData.length; i++) {
+            if(this.chatCARoomData[i].key == key) {
+                return this.chatCARoomData[i].info;
             }
         }
     }
