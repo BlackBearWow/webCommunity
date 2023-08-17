@@ -23,10 +23,11 @@
 		let CAChatRoomKey = false;
 		//여기부터는 크아를 위한 변수
 		let can;        //canvas 객체
-        let ctx;        //context객체를 얻어야 drawimage와 filltext를 할 수 있음
+		let ctx;        //context객체를 얻어야 drawimage와 filltext를 할 수 있음
+		let inGame = false; //현재 게임 진행중인가 변수
 		let mainInterval;   //interval변수
-        let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
-		let keyBoard = {};//키보드를 입력했는지 아닌지 확인하는 오브젝트
+		let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
+		let keyBoard = {'37': false, '38': false, '39': false, '40': false, '32': false};//키보드를 입력했는지 아닌지 확인하는 오브젝트
 		let bgImage1, bgImage2; //배경 이미지 저장변수
 		$(document).ready(() => {
 			$("#chatText").keydown(function (key) {
@@ -83,14 +84,14 @@
 		socket.emit("request chatRoomList");
 		// 크아 채팅방 리스트를 가져다 달라.
 		socket.emit("request CAChatRoomList");
-		socket.on('yourNickname', (yourNickname)=> {
+		socket.on('yourNickname', (yourNickname) => {
 			nickname = yourNickname;
 		})
 		socket.on('disconnect', () => {
 			alert('연결이 끊겼습니다');
 			location.href = '/';
 		})
-		socket.on('alert', (msg)=>{
+		socket.on('alert', (msg) => {
 			alert(msg);
 		})
 		socket.on("response onlineChatNicknames", (nicknames) => {
@@ -106,17 +107,18 @@
 	</div>`);
 			})
 		})
-		socket.on("response chatRoomList", (list) => {
+		socket.on("response chatRoomList", (obj) => {
 			$('#chatRoomNames').empty();
-			list.forEach((val) => {
-				$('#chatRoomNames').append(`<tr onclick="accessChatRoom('${val.key}', '${val.name}')"><td scope="row">${val.population}</td><td>${val.name}</td></tr>`);
-			})
+			for (const [key, val] of Object.entries(obj)) {
+				$('#chatRoomNames').append(`<tr onclick="accessChatRoom('${key}', '${val.name}')"><td scope="row">${val.population}</td><td>${val.name}</td></tr>`);
+			}
+
 		})
-		socket.on("response CAChatRoomList", (list) => {
+		socket.on("response CAChatRoomList", (obj) => {
 			$('#CARoomNames').empty();
-			list.forEach((val) => {
-				$('#CARoomNames').append(`<tr onclick="accessCAChatRoom('${val.key}', '${val.name}')"><td scope="row">${val.population}</td><td>${val.name}</td></tr>`);
-			})
+			for (const [key, val] of Object.entries(obj)) {
+				$('#CARoomNames').append(`<tr onclick="accessCAChatRoom('${key}', '${val.name}')"><td scope="row">${val.population}</td><td>${val.name}</td></tr>`);
+			}
 		})
 		socket.on('chat message', (msg) => {
 			$('#chatting').append(`<li class="list-group-item">${msg}</li>`);
@@ -150,34 +152,41 @@
         </div>
     </div>`);
 		})
-		socket.on('CAChatRoomJoinSucess', (key, name)=>{
+		socket.on('CAChatRoomJoinSucess', (key, name) => {
 			exitCurrentRoom();
 			showCADiv();
 			CAChatRoomKey = key;
 			$('#chatCARoomTitle').text(name);
 			$('#CAChatting').empty();
 		})
-		socket.on('CARoomInfo', (infoList)=>{
+		socket.on('CARoomInfo', (infoObj) => {
 			$('#CAUserInfo').empty();
-			infoList.forEach((info, index)=>{
-				if(index==0) {
+			const infoList = Object.entries(infoObj);
+			for (let i = 0; i < infoList.length; i++) {
+				let [nickname, val] = infoList[i];
+				if (i == 0) {
 					$('#CAUserInfo').append(`<img class="position-absolute" style="top:140px;left:55px;" src="/images/bazzi/배찌31.png">`);
-					$('#CAUserInfo').append(`<h6 class="position-absolute text-white" style="top:215px;left:33px;">${info.nickname}</h6>`);
-					$('#CAUserInfo').append(`<h6 class="position-absolute text-warning" style="top:235px;left:33px;">${info.ready?'준비완료':'준비중'}</h6>`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-white" style="top:215px;left:33px;">${nickname}</h6>`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-warning" style="top:235px;left:33px;">${val.ready ? '준비완료' : '준비중'}</h6>`);
 				}
-				else if(index==1) {
+				else if (i == 1) {
 					$('#CAUserInfo').append(`<img class="position-absolute" style="top:140px;left:160px;" src="/images/bazzi/배찌31.png">`);
-					$('#CAUserInfo').append(`<h6 class="position-absolute text-white" style="top:215px;left:138px;">${info.nickname}</h6>`);
-					$('#CAUserInfo').append(`<h6 class="position-absolute text-warning" style="top:235px;left:138px;">${info.ready?'준비완료':'준비중'}</h6>`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-white" style="top:215px;left:138px;">${nickname}</h6>`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-warning" style="top:235px;left:138px;">${val.ready ? '준비완료' : '준비중'}</h6>`);
 				}
-			})
-			console.log(infoList);
+			}
+			console.log(infoObj);
 		})
-		socket.on('gameStart', ()=>{
+		socket.on('gameStart', () => {
 			$('#beforeGame').hide();
 			$('#can').show();
-			mainInterval = setInterval(sendData, 20);
-			alert('게임 시작');
+			$('#can').focus();
+			inGame=true;
+			gameInitialize();
+		})
+		socket.on('CAKeyboardData', (roomInfoObj) => {
+			receiveFlag = true;
+			oneFrame(roomInfoObj);
 		})
 		function inviteChatRoom(nickname) {
 			if (!chatRoomKey && !CAChatRoomKey) {
@@ -236,44 +245,72 @@
 			//성공: CAChatRoomJoinSucess, 실패: alert
 		}
 		function sendChat() {
-			if($('#chatText').val() != '') {
+			if ($('#chatText').val() != '') {
 				socket.emit('chat message', chatRoomKey, $('#chatText').val());
 				$('#chatText').val(``);
 			}
 		}
 		function sendCAChat() {
-			if($('#CAChatText').val() != '') {
+			if ($('#CAChatText').val() != '') {
 				socket.emit('CAChat message', CAChatRoomKey, $('#CAChatText').val());
 				$('#CAChatText').val(``);
+			}
+			else if(inGame) {
+				$('#can').focus();
 			}
 		}
 		function iAmReady() {
 			//크아 게임할 준비가 돼었다.
 			socket.emit('iAmReady', CAChatRoomKey);
 		}
-		function makeImage(source)
-        {
-            const img=new Image();
-            img.src=source;
+		function makeImage(source) {
+			const img = new Image();
+			img.src = source;
 			return img;
-        }
+		}
 		function canvasInitialize() {
-			can=document.getElementById("can");
-            ctx=can.getContext("2d");
-			bgImage1=makeImage('/images/map/크아인게임.png');
-			bgImage1.onload = ()=>{
+			can = document.getElementById("can");
+			ctx = can.getContext("2d");
+			bgImage1 = makeImage('/images/map/크아인게임.png');
+			bgImage1.onload = () => {
 				ctx.drawImage(bgImage1, 0, 0);
 			}
-			bgImage2=makeImage('/images/map/크아배경1.png');
-			$('#can').keydown((e)=>{ keyBoard[e.keyCode] = true; })
-			$('#can').keyup((e)=>{ keyBoard[e.keyCode] = false; })
+			bgImage2 = makeImage('/images/map/크아배경1.png');
+			bgImage2.onload = () => {
+				ctx.drawImage(bgImage2, 20, 41);
+			}
+			$('#can').keydown((e) => { 
+				keyBoard[e.keyCode] = true; 
+				if(e.keyCode == 13 && inGame)
+					$('#CAChatText').focus();
+			})
+			$('#can').keyup((e) => { keyBoard[e.keyCode] = false; })
+		}
+		function gameInitialize() {
+			mainInterval = setInterval(sendData, 20);
 		}
 		function sendData() {
-            if(receiveFlag === true) {
-                socket.emit('keyBoardData', CAChatRoomKey, {left:keyBoard[37], up:keyBoard[38], right:keyBoard[39], down:keyBoard[40], space:keyBoard[32]});
-                receiveFlag = false;
-            }
-        }
+			if (receiveFlag === true) {
+				const keyBoardDataObj = { left: keyBoard[37], up: keyBoard[38], right: keyBoard[39], down: keyBoard[40], space: keyBoard[32] };
+				socket.emit('keyBoardData', CAChatRoomKey, keyBoardDataObj);
+				receiveFlag = false;
+			}
+		}
+		function oneFrame(roomInfoObj) {
+			//여기에 데이터를 이용해 한 프레임을 담당하는 것을 진행해야 한다.
+			gameLogic(roomInfoObj);
+			gameDraw();
+		}
+		let temproomInfoObj;
+		function gameLogic(roomInfoObj) {
+			temproomInfoObj = roomInfoObj;
+		}
+		function gameDraw() {
+			ctx.drawImage(bgImage1, 0, 0);
+			ctx.drawImage(bgImage2, 20, 41);
+			ctx.font = "15px Arial";
+			ctx.fillText(JSON.stringify(temproomInfoObj), 10, 150);
+		}
 	</script>
 </head>
 
@@ -351,18 +388,20 @@
 			<div class="col border rightDiv mh-100 overflow-auto" id="CADiv" style="display:none;">
 				<div class="position-relative" id="beforeGame">
 					<img src="/images/map/크아대기실.png">
-					<img class="position-absolute" style="top:495px;left:513px;" src="/images/map/시작.gif" onclick="iAmReady()">
+					<img class="position-absolute" style="top:495px;left:513px;" src="/images/map/시작.gif"
+						onclick="iAmReady()">
 					<h5 id="chatCARoomTitle" class="position-absolute" style="top:60px;left:90px;">크아채팅방이름</h5>
 					<div id="CAUserInfo">
-						
+
 					</div>
-					<div class="position-absolute overflow-auto" id="CAChatDiv" style="top:300px;left:20px;max-width:550px;max-height:250px;" >
+					<div class="position-absolute overflow-auto" id="CAChatDiv"
+						style="top:300px;left:20px;max-width:550px;max-height:250px;">
 						<ul class="list-group" id="CAChatting">
 							<li class="list-group-item">크아채팅예시</li>
 						</ul>
 					</div>
 				</div>
-				<canvas id="can" width="800" height="600" style="display: none;"></canvas>
+				<canvas id="can" width="800" height="600" style="display: none;" tabindex='1'></canvas>
 				<input type="text" class="form-control" id="CAChatText" placeholder="채팅" maxlength="20" required>
 				<!--input type="button" class="btn btn-success" value="보내기" id="sendChat" onclick="sendCAChat()"-->
 			</div>

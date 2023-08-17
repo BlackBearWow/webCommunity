@@ -50,7 +50,6 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             room.subCAChatPopulation(key, socket.nickname);
             socket.leave(key);
             io.to('index').emit('response CAChatRoomList', room.getCAChatRoomList());
-            //io.to(key).emit('CAChat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
             io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
         });
         socket.on('chat message', (key, msg) => {
@@ -85,7 +84,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             if(room.CAReady(key, socket.nickname)=='all ready')
                 io.to(key).emit('gameStart');
             io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
-        })
+        });
         socket.on('disconnecting', () => {
             for (const r of socket.rooms) {
                 //인덱스페이지에서 나가면 집합에서 제외한다.
@@ -94,10 +93,10 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
                     io.to('index').emit('response onlineChatNicknames', room.getIndexNicknames());
                 }
                 else if (r != socket.id) {
-                    room.subChatPopulation(r);
-                    room.subCAChatPopulation(r, socket.nickname);
-                    io.to(r).emit('chat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
-                    io.to(r).emit('CARoomInfo', room.getCARoomInfo(r));
+                    if(room.subChatPopulation(r))
+                        io.to(r).emit('chat message', `${socket.nickname}이/가 채팅방에서 나갔습니다.`);
+                    if(room.subCAChatPopulation(r, socket.nickname))
+                        io.to(r).emit('CARoomInfo', room.getCARoomInfo(r));
                 }
             }
         });
@@ -107,7 +106,12 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
         });
         socket.on('keyBoardData', (key, keyboardObject)=>{
             //key, nickname에 맞는 키보드 데이터 저장.
+            room.saveCAKeyboardData(key, socket.nickname, keyboardObject);
             //모든 플레이어의 키보드 데이터가 저장되었다면 emit.
-        })
+            if(room.allCAplayerKeyboardDataReceived(key)){
+                io.to(key).emit('CAKeyboardData', room.getCAKeyboardData(key));
+                room.setCAKeyboardDataFalse(key);
+            }
+        });
     });
 };

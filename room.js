@@ -5,10 +5,10 @@ class Room {
     constructor() {
         //key는 방 접속id로, 방을 구분짓기 위한 것으로만 사용한다.
         this.keys = new Set();
-        //{key, name, population}으로 구성됨.
-        this.chatRoomData = new Array();
-        //{key, name, population, maxPopulation, info}으로 구성됨. info는 배열로, {nickname, ready, keyboard}
-        this.chatCARoomData = new Array();
+        // key를 name으로, {name, population}을 value로 가진다.
+        this.chatRoomData = {};
+        // key를 name으로, {name, population, maxPopulation, info}을 value로 가진다. info는 nickname을 name으로, {ready, keyboard}를 value로 가진다.
+        this.chatCARoomData = {};
         //index페이지에 어떤 사람들이 있는지 저장하는 용도
         this.indexNicknames = new Set();
     }
@@ -31,79 +31,52 @@ class Room {
     makeNewChatRoom(name) {
         let key = this.makeDistinctKey();
         this.keys.add(key);
-        this.chatRoomData.push({key, name, population:0});
+        this.chatRoomData[key] = { name, population: 0 };
         return key;
     }
     makeNewCAChatRoom(name) {
         let key = this.makeDistinctKey();
         this.keys.add(key);
-        this.chatCARoomData.push({key, name, population:0, maxPopulation:2, info:new Array()});
+        this.chatCARoomData[key] = { name, population: 0, maxPopulation: 2, info: {} };
         return key;
     }
     addChatPopulation(key) {
-        for(let i=0; i<this.chatRoomData.length; i++) {
-            if(this.chatRoomData[i].key == key) {
-                this.chatRoomData[i].population++; break;
-            }
-        }
+        this.chatRoomData[key].population++;
     }
     addCAChatPopulationInfo(key, nickname) {
-        for(let i=0; i<this.chatCARoomData.length; i++) {
-            if(this.chatCARoomData[i].key == key) {
-                this.chatCARoomData[i].info.push({nickname, ready:false, keyboard:false});
-                this.chatCARoomData[i].population++; break;
-            }
-        }
+        this.chatCARoomData[key].population++;
+        this.chatCARoomData[key].info[nickname] = { ready: false, keyboard: false };
     }
     subChatPopulation(key) {
-        for(let i=0; i<this.chatRoomData.length; i++) {
-            if(this.chatRoomData[i].key == key) {
-                this.chatRoomData[i].population--;
-                if(this.chatRoomData[i].population <= 0)
-                    this.deleteChatRoom(key);
-                break;
-            }
-        }
+        if (!this.chatRoomData[key]) return false;
+        this.chatRoomData[key].population--;
+        if (this.chatRoomData[key].population <= 0)
+            this.deleteChatRoom(key);
+        return true;
     }
     subCAChatPopulation(key, nickname) {
-        for(let i=0; i<this.chatCARoomData.length; i++) {
-            if(this.chatCARoomData[i].key == key) {
-                this.chatCARoomData[i].population--;
-                this.chatCARoomData[i].info = this.chatCARoomData[i].info.filter((v)=>v.nickname != nickname);
-                if(this.chatCARoomData[i].population <= 0)
-                    this.deleteCAChatRoom(key);
-                break;
-            }
-        }
+        if (!this.chatCARoomData[key]) return false;
+        this.chatCARoomData[key].population--;
+        delete this.chatCARoomData[key].info[nickname];
+        if (this.chatCARoomData[key].population <= 0)
+            this.deleteCAChatRoom(key);
+        return true;
     }
     CAReady(key, nickname) {
-        for(let i=0; i<this.chatCARoomData.length; i++) {
-            if(this.chatCARoomData[i].key == key) {
-                for(let k=0; k<this.chatCARoomData[i].info.length; k++) {
-                    if(this.chatCARoomData[i].info[k].nickname === nickname) {
-                        this.chatCARoomData[i].info[k].ready=true; 
-                        if(this.chatCARoomData[i].info.every((val)=>val.ready==true) && this.chatCARoomData[i].population >= 2) return 'all ready';
-                        break;
-                    }
-                }
-                break;
-            }
-        }
+        this.chatCARoomData[key].info[nickname].ready = true;
+        if (Object.values(this.chatCARoomData[key].info).every((v) => v.ready == true) && this.chatCARoomData[key].population >= 2) return 'all ready';
     }
     getCARoomInfo(key) {
-        for(let i=0; i<this.chatCARoomData.length; i++) {
-            if(this.chatCARoomData[i].key == key) {
-                return this.chatCARoomData[i].info;
-            }
-        }
+        if (!this.chatCARoomData[key]) return false;
+        return this.chatCARoomData[key].info;
     }
     deleteChatRoom(key) {
         this.keys.delete(key);
-        this.chatRoomData = this.chatRoomData.filter((v)=> v.key != key);
+        delete this.chatRoomData[key];
     }
     deleteCAChatRoom(key) {
         this.keys.delete(key);
-        this.chatCARoomData = this.chatCARoomData.filter((v)=> v.key != key);
+        delete this.chatCARoomData[key];
     }
     getChatRoomList() {
         return this.chatRoomData;
@@ -112,9 +85,22 @@ class Room {
         return this.chatCARoomData;
     }
     getCARoomPopulation(key) {
-        let data = this.chatCARoomData.find((val)=>val.key===key);
-        return data.population;
+        return this.chatCARoomData[key].population;
+    }
+    saveCAKeyboardData(key, nickname, keyboardObject){
+        this.chatCARoomData[key].info[nickname].keyboard = keyboardObject;
+    }
+    allCAplayerKeyboardDataReceived(key) {
+        return Object.values(this.chatCARoomData[key].info).every((v)=>v.keyboard);
+    }
+    getCAKeyboardData(key) {
+        return this.chatCARoomData[key].info;
+    }
+    setCAKeyboardDataFalse(key) {
+        for(let nickname of Object.keys(this.chatCARoomData[key].info)) {
+            this.chatCARoomData[key].info[nickname].keyboard=false;
+        }
     }
 }
 
-module.exports = {Room};
+module.exports = { Room };
