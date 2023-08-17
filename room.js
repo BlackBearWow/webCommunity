@@ -7,7 +7,7 @@ class Room {
         this.keys = new Set();
         //{key, name, population}으로 구성됨.
         this.chatRoomData = new Array();
-        //{key, name, population, maxPopulation, info}으로 구성됨. info는 배열로, {nickname, ready}
+        //{key, name, population, maxPopulation, info}으로 구성됨. info는 배열로, {nickname, ready, keyboard}
         this.chatCARoomData = new Array();
         //index페이지에 어떤 사람들이 있는지 저장하는 용도
         this.indexNicknames = new Set();
@@ -50,7 +50,7 @@ class Room {
     addCAChatPopulationInfo(key, nickname) {
         for(let i=0; i<this.chatCARoomData.length; i++) {
             if(this.chatCARoomData[i].key == key) {
-                this.chatCARoomData[i].info.push({nickname, ready:false});
+                this.chatCARoomData[i].info.push({nickname, ready:false, keyboard:false});
                 this.chatCARoomData[i].population++; break;
             }
         }
@@ -82,7 +82,7 @@ class Room {
                 for(let k=0; k<this.chatCARoomData[i].info.length; k++) {
                     if(this.chatCARoomData[i].info[k].nickname === nickname) {
                         this.chatCARoomData[i].info[k].ready=true; 
-                        if(this.chatCARoomData[i].info.every((val)=>val.ready==true)) return 'all ready';
+                        if(this.chatCARoomData[i].info.every((val)=>val.ready==true) && this.chatCARoomData[i].population >= 2) return 'all ready';
                         break;
                     }
                 }

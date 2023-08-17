@@ -19,6 +19,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
                     socket.nickname=session.nickname;
                     //초대메시지를 받기 위해 자신의 닉네임 room에 join한다.
                     socket.join(socket.nickname);
+                    socket.emit('yourNickname', socket.nickname);
                     room.addNewNicknameAtIndex(session.nickname);
                     io.to('index').emit('response onlineChatNicknames', room.getIndexNicknames());
                 })
@@ -104,5 +105,9 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             io.to('index').emit('response chatRoomList', room.getChatRoomList());
             io.to('index').emit('response CAChatRoomList', room.getCAChatRoomList());
         });
+        socket.on('keyBoardData', (key, keyboardObject)=>{
+            //key, nickname에 맞는 키보드 데이터 저장.
+            //모든 플레이어의 키보드 데이터가 저장되었다면 emit.
+        })
     });
 };

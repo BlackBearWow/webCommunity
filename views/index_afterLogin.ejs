@@ -16,13 +16,18 @@
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<script>
+		// 내 닉네임
+		let nickname;
 		// 현재 내가 어느 채팅방인가. 다른 채팅방에 들어갈 때, 현재 방을 나가기 위해 사용하는 변수
 		let chatRoomKey = false;
 		let CAChatRoomKey = false;
 		//여기부터는 크아를 위한 변수
 		let can;        //canvas 객체
         let ctx;        //context객체를 얻어야 drawimage와 filltext를 할 수 있음
-		let bgReadyImage, bgIngameImage; //배경 이미지 저장변수
+		let mainInterval;   //interval변수
+        let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
+		let keyBoard = {};//키보드를 입력했는지 아닌지 확인하는 오브젝트
+		let bgImage1, bgImage2; //배경 이미지 저장변수
 		$(document).ready(() => {
 			$("#chatText").keydown(function (key) {
 				if (key.keyCode == 13) {
@@ -78,7 +83,9 @@
 		socket.emit("request chatRoomList");
 		// 크아 채팅방 리스트를 가져다 달라.
 		socket.emit("request CAChatRoomList");
-
+		socket.on('yourNickname', (yourNickname)=> {
+			nickname = yourNickname;
+		})
 		socket.on('disconnect', () => {
 			alert('연결이 끊겼습니다');
 			location.href = '/';
@@ -167,6 +174,9 @@
 			console.log(infoList);
 		})
 		socket.on('gameStart', ()=>{
+			$('#beforeGame').hide();
+			$('#can').show();
+			mainInterval = setInterval(sendData, 20);
 			alert('게임 시작');
 		})
 		function inviteChatRoom(nickname) {
@@ -250,11 +260,20 @@
 		function canvasInitialize() {
 			can=document.getElementById("can");
             ctx=can.getContext("2d");
-			bgReadyImage=makeImage('/images/map/크아대기실.png');
-			bgReadyImage.onload = ()=>{
-				ctx.drawImage(bgReadyImage, 0, 0);
+			bgImage1=makeImage('/images/map/크아인게임.png');
+			bgImage1.onload = ()=>{
+				ctx.drawImage(bgImage1, 0, 0);
 			}
+			bgImage2=makeImage('/images/map/크아배경1.png');
+			$('#can').keydown((e)=>{ keyBoard[e.keyCode] = true; })
+			$('#can').keyup((e)=>{ keyBoard[e.keyCode] = false; })
 		}
+		function sendData() {
+            if(receiveFlag === true) {
+                socket.emit('keyBoardData', CAChatRoomKey, {left:keyBoard[37], up:keyBoard[38], right:keyBoard[39], down:keyBoard[40], space:keyBoard[32]});
+                receiveFlag = false;
+            }
+        }
 	</script>
 </head>
 
