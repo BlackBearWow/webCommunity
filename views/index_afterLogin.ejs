@@ -28,29 +28,31 @@
 		let mainInterval;   //interval변수
 		let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
 		let keyBoard = { '37': false, '38': false, '39': false, '40': false, '32': false };//키보드를 입력했는지 아닌지 확인하는 오브젝트
-		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20 };	//게임 상수들
+		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20, wbWaitingTime: 200, popTime: 100 };	//게임 상수들
 		let mapData; //게임 데이터. 0빈칸 a빨강블럭 b주황블럭 c크아박스 A집1 B집2 C나무
 		const bg = { bgImage1: undefined, bgImage2: undefined, winImage: undefined, closeTime: 0 }; //배경 이미지 저장변수
 		//character는 서버로부터 nickname(name):value를 받아서 해당 property를 추가한다.
 		const character = { leftImage: [], upImage: [], rightImage: [], downImage: [], inWaterBalloonImage: [], deadImage: [], nicknames: [] };
-		const hardBlock = { house1: undefined, house2: undefined, tree: undefined, info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT) }; //안깨지는 블럭
+		const hardBlock = { house1: undefined, house2: undefined, tree: undefined, info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0) }; //안깨지는 블럭
 		const softBlock = {
 			redBlock: undefined, redBlockPop1: undefined, redBlockPop2: undefined, orangeBlock: undefined,
 			orangeBlockPop1: undefined, orangeBlockPop2: undefined, brownBlock: undefined, brownBlockPop1: undefined, brownBlockPop2: undefined,
-			info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT), //무슨 블록인지 저장
-			item: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT), //아이템 정보를 저장
-			pop: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT), //터지는중이면1 터졌거나 멀쩡하면 0
-			poptime: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT) //poptime보다 커지면 터지게 한다.
+			info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0), //무슨 블록인지 저장
+			item: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0), //아이템 정보를 저장
+			pop: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0), //터지는중이면1 터졌거나 멀쩡하면 0
+			poptime: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0) //poptime보다 커지면 터지게 한다.
 		}; //깨지는 블럭
 		const itemBlock = {
 			speed1: undefined, speed2: undefined, waterLength1: undefined, waterLength2: undefined,
 			waterBalloon1: undefined, waterBalloon2: undefined,
-			info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT),
-			time: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT)	//아이템 시간. 반짝이게 보이게 위해 필요한 변수
+			info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0), //처음부터 여기에 저장할까? softblock의 item이 필요 없을 수도 있겠다.
+			time: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0)	//아이템 시간. 반짝이게 보이게 위해 필요한 변수
 		}; //아이템 블럭
 		const waterBalloonBlock = {
 			img: [], leftBoom: [], upBoom: [], rightBoom: [], downBoom: [], midBoom: [],
-			//더 추가해야 함
+			info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0)
+			//player:누구의 물풍선인지. 다 터지고나서 캐릭터 물풍선 개수를 증가시키기 위해 사용. what: b물풍선 l왼쪽펑 u위펑 r오른쪽펑 d아래펑 m가운데펑
+			//pop: 현재 터지는 중인지. waitinTime: 터지기까지의 시간. boomTime: 터지고 사라지기까지의 시간. length: 물줄기 길이
 		}; //물풍선 블럭
 		$(document).ready(() => {
 			$("#chatText").keydown(function (key) {
@@ -200,12 +202,12 @@
 			}
 			console.log(infoObj);
 		})
-		socket.on('gameStart', (infoObj) => {
+		socket.on('gameStart', (infoObj, itemBlockInfo) => {
 			$('#beforeGame').hide();
 			$('#can').show();
 			$('#can').focus();
 			inGame = true;
-			gameInitialize(Object.keys(infoObj));
+			gameInitialize(Object.keys(infoObj), itemBlockInfo);
 		})
 		socket.on('CAKeyboardData', (roomInfoObj) => {
 			receiveFlag = true;
@@ -343,21 +345,27 @@
 			waterBalloonBlock.downBoom.push(makeImage(`/images/waterBalloon/down펑2.png`));
 			waterBalloonBlock.midBoom.push(makeImage(`/images/waterBalloon/mid펑1.png`));
 			waterBalloonBlock.midBoom.push(makeImage(`/images/waterBalloon/mid펑2.png`));
+			// 물풍선 info데이터 삽입. 2차원 배열을 만들며 .fill로는 객체의 참조가 복사되어, 일일히 할당해야함.
+			for (let y = 0; y < mapConst.MAPHEIGHT; y++) {
+				for (let x = 0; x < mapConst.MAPWIDTH; x++) {
+					waterBalloonBlock.info[y][x] = { player: undefined, what: 0, waitingTime: 0, boomTime: 0, length: 1 };
+				}
+			}
 			//맵 데이터 삽입. 0빈칸 a빨강블럭 b주황블럭 c크아박스 A집1 B집2 C나무
-			mapData=[
-			'CCCCCCCCCCCCCCC',
-			'C000aC0C0Ca000C',
-			'C0CAbC0C0CbAC0C',
-			'CbababababababC',
-			'CBbCbAaAaCbBbCC',
-			'Cbabab000bababC',
-			'CCbAaB000BaCbBC',
-			'Cbabab000bababC',
-			'CCbBbAbBbCbCbBC',
-			'CbababababababC',
-			'C0CAbC0C0CbBC0C',
-			'C000aC0C0Ca000C',
-			'CCCCCCCCCCCCCCC'
+			mapData = [
+				'CCCCCCCCCCCCCCC',
+				'C000aC0C0Ca000C',
+				'C0CAbC0C0CbAC0C',
+				'CbababababababC',
+				'CBbCbAaAaCbBbCC',
+				'Cbabab000bababC',
+				'CCbAaB000BaCbBC',
+				'Cbabab000bababC',
+				'CCbBbAbBbCbCbBC',
+				'CbababababababC',
+				'C0CAbC0C0CbBC0C',
+				'C000aC0C0Ca000C',
+				'CCCCCCCCCCCCCCC'
 			];
 			//키다운 키업 이벤트리스너 등록
 			$('#can').keydown((e) => {
@@ -367,10 +375,10 @@
 			})
 			$('#can').keyup((e) => { keyBoard[e.keyCode] = false; })
 		}
-		function make2DemensionArray(x, y) {
-			return Array.from(Array(y), () => new Array(x));
+		function make2DemensionArray(x, y, fillData) {
+			return Array.from(Array(y), () => Array(x).fill(fillData));
 		}
-		function gameInitialize(nicknames) {
+		function gameInitialize(nicknames, itemBlockInfo) {
 			//캐릭터를 초기화한다.
 			character.nicknames = nicknames;
 			nicknames.forEach((nickname, index) => {
@@ -378,10 +386,9 @@
 					inWaterBalloon: false, inWaterBalloonTime: 0,
 					dead: false, sight: 'down',
 					walkingTime: 0, speed: 1,
-					waterballoonSize: 1,	//물줄기 길이
+					waterballoonLength: 1,	//물줄기 길이
 					waterballoonMaxNum: 1,	//최대 물풍선 개수
-					waterballoonNum: 0,	//현재 물풍선 개수
-					waterballoonCount: 0	//waterballoon에게 넘겨줄 번호. 0~99로 물풍선 놓을 때마다 1씩 커짐.
+					waterballoonNum: 0	//현재 물풍선 개수
 				}
 				if (index === 0) {
 					character[nickname].x = 40; character[nickname].y = 40;
@@ -391,12 +398,34 @@
 				}
 			})
 			//블럭들 초기화
-			for(let y=0; y<mapData.length; y++) {
-				for(let x=0; x<mapData[y].length; x++) {
-					
+			for (let y = 0; y < mapData.length; y++) {
+				for (let x = 0; x < mapData[y].length; x++) {
+					const ch = mapData[y][x];
+					//숫자로 넣지 말고, 문자열로 넣어도 되겠다.
+					if (ch == 'a') { //빨강블럭
+						softBlock.info[y][x] = 'r';
+						softBlock.item[y][x] = itemBlockInfo[y][x];
+					}
+					else if (ch == 'b') { //주황블럭
+						softBlock.info[y][x] = 'o';
+						softBlock.item[y][x] = itemBlockInfo[y][x];
+					}
+					else if (ch == 'c') { //갈색블럭
+						softBlock.info[y][x] = 'b';
+						softBlock.item[y][x] = itemBlockInfo[y][x];
+					}
+					else if (ch == 'A') { //집1
+						hardBlock.info[y][x] = 'h1';
+					}
+					else if (ch == 'B') { //집2
+						hardBlock.info[y][x] = 'h2';
+					}
+					else if (ch == 'C') { //나무
+						hardBlock.info[y][x] = 't';
+					}
 				}
 			}
-			mainInterval = setInterval(sendData, 20);
+			mainInterval = setInterval(sendData, 16);
 		}
 		function sendData() {
 			if (receiveFlag === true) {
@@ -412,8 +441,444 @@
 		}
 		let temproomInfoObj;
 		function gameLogic(roomInfoObj) {
+			characterMove(roomInfoObj);
+			getItem();
+			pressBalloon(roomInfoObj);
+			balloonTimeAndPop();
+			softBlockPop();
+			itemTimeFlow();
 			temproomInfoObj = roomInfoObj;
 		}
+		function characterMove(roomInfoObj) {
+			character.nicknames.forEach((nickname) => {
+				const cellX = Math.floor(character[nickname].x / 40);
+				const cellY = Math.floor(character[nickname].y / 40);
+				if (roomInfoObj[nickname].keyboard.left) {
+					character[nickname].sight = 'left';
+					character[nickname].walkingTime++;
+					if (character[nickname].x % 40 == 0) { //왼쪽으로 움직일 때 좌우가 딱 가운데일 때
+						if (character[nickname].y % 40 == 0) { //상하도 가운데라면 왼쪽칸만 빈공간이면 움직임.
+							if (IsThereEmpty(cellX - 1, cellY))
+								character[nickname].x -= character[nickname].speed;
+						}
+						else { //상하가 가운데가 아니라면
+							//왼쪽 위와 아래가 둘다 뚫렸다면 움직임
+							if (IsThereEmpty(cellX - 1, cellY) && IsThereEmpty(cellX - 1, cellY + 1))
+								character[nickname].x -= character[nickname].speed;
+							//왼쪽위는 막히고 왼쪽아래가 뚤렸을 때 아래로 움직임
+							else if ((IsThereEmpty(cellX - 1, cellY) == false) && IsThereEmpty(cellX - 1, cellY + 1)) {
+								character[nickname].y += character[nickname].speed;
+								//아래 칸보다 더 넘어가면 상하를 맞춰줌.
+								if (cellY < Math.floor(character[nickname].y / 40))
+									character[nickname].y = (cellY + 1) * 40;
+							}
+							//왼쪽아래가 막혔을때 왼쪽위로 움직임
+							else if (IsThereEmpty(cellX - 1, cellY) && (IsThereEmpty(cellX - 1, cellY + 1) == false)) {
+								character[nickname].y -= character[nickname].speed;
+								//현재 칸을 넘어가면 상하를 맞춰줌.
+								if (Math.floor(character[nickname].y / 40) < cellY)
+									character[nickname].y = cellY * 40;
+							}
+						}
+					}
+					else { //좌우가 가운데가 아닐 때
+						const gox = character[nickname].x - character[nickname].speed;
+						const goCellX = Math.floor(gox / 40);
+						if (character[nickname].y % 40 == 0) { //상하가 가운데일 때
+							if (goCellX == cellX) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].x = gox;
+							}
+							else if (IsThereEmpty(goCellX, cellY)) { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이라면 움직이기
+								character[nickname].x = gox;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].x = cellX * 40;
+							}
+						}
+						else { //상하가 가운데가 아닐 때
+							if (goCellX == cellX) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].x = gox;
+							}
+							else if (IsThereEmpty(goCellX, cellY) && IsThereEmpty(goCellX, cellY + 1)) {
+								//현재 캐릭터칸과 움직일 칸이 다르고 빈공간이라면 움직이기
+								character[nickname].x = gox;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].x = cellX * 40;
+							}
+						}
+					}
+				}
+				else if (roomInfoObj[nickname].keyboard.up) {
+					character[nickname].sight = 'up';
+					character[nickname].walkingTime++;
+					if (character[nickname].y % 40 == 0) { //위로 움직일때 상하가 딱 가운데일때
+						if (character[nickname].x % 40 == 0) { //좌우도 가운데라면 위쪽칸만 빈공간이면 움직임.
+							if (IsThereEmpty(cellX, cellY - 1))
+								character[nickname].y -= character[nickname].speed;
+						}
+						else { //좌우가 가운데가 아니라면
+							//왼쪽 위와 오른쪽 위가 둘다 뚫렸다면 움직임
+							if (IsThereEmpty(cellX, cellY - 1) && IsThereEmpty(cellX + 1, cellY - 1))
+								character[nickname].y -= character[nickname].speed;
+							//왼쪽위는 막히고 오른쪽 위가 뚤렸을 때 오른쪽으로 움직임
+							else if ((IsThereEmpty(cellX, cellY - 1) == false) && IsThereEmpty(cellX + 1, cellY - 1)) {
+								character[nickname].x += character[nickname].speed;
+								//오른쪽 칸보다 더 넘어가면 좌우를 맞춰줌.
+								if (cellX < Math.floor(character[nickname].x / 40))
+									character[nickname].x = (cellX + 1) * 40;
+							}
+							//오른쪽위가 막혔을때 왼쪽위로 움직임
+							else if (IsThereEmpty(cellX, cellY - 1) && (IsThereEmpty(cellX + 1, cellY - 1) == false)) {
+								character[nickname].x -= character[nickname].speed;
+								//현재 칸을 넘어가면 좌우를 맞춰줌.
+								if (Math.floor(character[nickname].x / 40) < cellX)
+									character[nickname].x = cellX * 40;
+							}
+						}
+					}
+					else {	//상하가 가운데가 아닐 때
+						const goy = character[nickname].y - character[nickname].speed;
+						const goCellY = Math.floor(goy / 40);
+						if (character[nickname].x % 40 == 0) { //좌우가 가운데일 때
+							if (goCellY == cellY) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].y = goy;
+							}
+							else if (IsThereEmpty(cellX, goCellY)) { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이라면 움직이기
+								character[nickname].y = goy;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].y = cellY * 40;
+							}
+						}
+						else { //좌우가 가운데가 아닐 때
+							if (goCellY == cellY) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].y = goy;
+							}
+							else if (IsThereEmpty(cellX, goCellY) && IsThereEmpty(cellX + 1, goCellY)) {
+								//현재 캐릭터칸과 움직일 칸이 다르고 빈공간이라면 움직이기
+								character[nickname].y = goy;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].y = cellY * 40;
+							}
+						}
+					}
+				}
+				else if (roomInfoObj[nickname].keyboard.right) {
+					character[nickname].sight = 'right';
+					character[nickname].walkingTime++;
+					if (character[nickname].x % 40 == 0) { //오른쪽으로 움직일 때 좌우가 딱 가운데일 때
+						if (character[nickname].y % 40 == 0) { //상하도 가운데라면 오른쪽칸만 빈공간이면 움직임.
+							if (IsThereEmpty(cellX + 1, cellY))
+								character[nickname].x += character[nickname].speed;
+						}
+						else { //상하가 가운데가 아니라면
+							//오른쪽 위와 아래가 둘다 뚫렸다면 움직임
+							if (IsThereEmpty(cellX + 1, cellY) && IsThereEmpty(cellX + 1, cellY + 1))
+								character[nickname].x += character[nickname].speed;
+							//오른쪽위는 막히고 오른쪽아래가 뚤렸을 때 아래로 움직임
+							else if ((IsThereEmpty(cellX + 1, cellY) == false) && IsThereEmpty(cellX + 1, cellY + 1)) {
+								character[nickname].y += character[nickname].speed;
+								//아래 칸보다 더 넘어가면 상하를 맞춰줌.
+								if (cellY < Math.floor(character[nickname].y / 40))
+									character[nickname].y = (cellY + 1) * 40;
+							}
+							//오른쪽아래가 막혔을때 오른쪽위로 움직임
+							else if (IsThereEmpty(cellX + 1, cellY) && (IsThereEmpty(cellX + 1, cellY + 1) == false)) {
+								character[nickname].y -= character[nickname].speed;
+								//현재 칸을 넘어가면 상하를 맞춰줌.
+								if (Math.floor(character[nickname].y / 40) < cellY)
+									character[nickname].y = cellY * 40;
+							}
+						}
+					}
+					else { //좌우가 가운데가 아닐 때
+						const gox = character[nickname].x + character[nickname].speed;
+						const goCellX = Math.floor(gox / 40);
+						if (character[nickname].y % 40 == 0) { //상하가 가운데일 때
+							if (goCellX == cellX) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].x = gox;
+							}
+							else if (IsThereEmpty(goCellX + 1, cellY)) { //현재 캐릭터칸과 움직일 칸이 다르고 벽에 막히지 않는다면 움직이기
+								character[nickname].x = gox;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].x = (cellX + 1) * 40;
+							}
+						}
+						else { //상하가 가운데가 아닐 때
+							if (goCellX == cellX) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].x = gox;
+							}
+							else if (IsThereEmpty(goCellX + 1, cellY) && IsThereEmpty(goCellX + 1, cellY + 1)) {
+								//현재 캐릭터칸과 움직일 칸이 다르고 벽에 막히지 않는다면 움직이기
+								character[nickname].x = gox;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].x = (cellX + 1) * 40;
+							}
+						}
+					}
+				}
+				else if (roomInfoObj[nickname].keyboard.down) {
+					character[nickname].sight = 'down';
+					character[nickname].walkingTime++;
+					if (character[nickname].y % 40 == 0) { //아래로 움직일때 상하가 딱 가운데일때
+						if (character[nickname].x % 40 == 0) { //좌우도 가운데라면 아래칸만 빈공간이면 움직임.
+							if (IsThereEmpty(cellX, cellY + 1))
+								character[nickname].y += character[nickname].speed;
+						}
+						else { //좌우가 가운데가 아니라면
+							//왼쪽 아래와 오른쪽 아래가 둘다 뚫렸다면 움직임
+							if (IsThereEmpty(cellX, cellY + 1) && IsThereEmpty(cellX + 1, cellY + 1))
+								character[nickname].y += character[nickname].speed;
+							//왼쪽아래는 막히고 오른쪽 아래가 뚤렸을 때 오른쪽으로 움직임
+							else if ((IsThereEmpty(cellX, cellY + 1) == false) && IsThereEmpty(cellX + 1, cellY + 1)) {
+								character[nickname].x += character[nickname].speed;
+								//오른쪽 칸보다 더 넘어가면 좌우를 맞춰줌.
+								if (cellX < Math.floor(character[nickname].x / 40))
+									character[nickname].x = (cellX + 1) * 40;
+							}
+							//오른쪽아래가 막혔을때 왼쪽아래로 움직임
+							else if (IsThereEmpty(cellX, cellY + 1) && (IsThereEmpty(cellX + 1, cellY + 1) == false)) {
+								character[nickname].x -= character[nickname].speed;
+								//현재 칸을 넘어가면 좌우를 맞춰줌.
+								if (Math.floor(character[nickname].x / 40) < cellX)
+									character[nickname].x = cellX * 40;
+							}
+						}
+					}
+					else {	//상하가 가운데가 아닐 때
+						const goy = character[nickname].y + character[nickname].speed;
+						const goCellY = Math.floor(goy / 40);
+						if (character[nickname].x % 40 == 0) { //좌우가 가운데일 때
+							if (goCellY == cellY) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].y = goy;
+							}
+							else if (IsThereEmpty(cellX, goCellY + 1)) { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이라면 움직이기
+								character[nickname].y = goy;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].y = (cellY + 1) * 40;
+							}
+						}
+						else { //좌우가 가운데가 아닐 때
+							if (goCellY == cellY) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
+								character[nickname].y = goy;
+							}
+							else if (IsThereEmpty(cellX, goCellY + 1) && IsThereEmpty(cellX + 1, goCellY + 1)) {
+								//현재 캐릭터칸과 움직일 칸이 다르고 빈공간이라면 움직이기
+								character[nickname].y = goy;
+							}
+							else { //현재 캐릭터칸과 움직일 칸이 다르고 빈공간이 아니라면 벽에 막히기
+								character[nickname].y = (cellY + 1) * 40;
+							}
+						}
+					}
+				}
+				else {
+					character[nickname].walkingTime = 0;
+				}
+			})
+		}
+		function getItem() {
+			character.nicknames.forEach((nickname) => {
+				const cellX = Math.floor((character[nickname].x + 20) / 40);
+				const cellY = Math.floor((character[nickname].y + 20) / 40);
+				const item = itemBlock.info[cellY][cellX];
+				if (item != 0) {
+					if (item == 's')
+						character[nickname].speed += 1;
+					else if (item == 'w')
+						character[nickname].waterballoonMaxNum += 1;
+					else if (item == 'l')
+						character[nickname].waterballoonLength += 1;
+					itemBlock.info[cellY][cellX] = 0;
+					//아이템 먹는 소리 재생
+				}
+			})
+		}
+		function IsThereEmpty(x, y) {
+			if ((x < 0) || (mapConst.MAPWIDTH <= x) || (y < 0) || (mapConst.MAPHEIGHT <= y))
+				return false;
+			if (softBlock.info[y][x] != 0)
+				return false;
+			if (hardBlock.info[y][x] != 0)
+				return false;
+			if (waterBalloonBlock.info[y][x].what == 'b')
+				return false;
+			return true;
+		}
+		function pressBalloon(roomInfoObj) {
+			character.nicknames.forEach((nickname) => {
+				if (roomInfoObj[nickname].keyboard.space) {
+					const cellX = Math.floor((character[nickname].x + 20) / 40);
+					const cellY = Math.floor((character[nickname].y + 20) / 40);
+					if (canSetWaterBalloon(cellX, cellY, nickname))
+						setWaterBalloon(cellX, cellY, nickname);
+				}
+			})
+		}
+		function canSetWaterBalloon(x, y, nickname) {
+			if ((x < 0) || (mapConst.MAPWIDTH <= x) || (y < 0) || (mapConst.MAPHEIGHT <= y))
+				return false;
+			if (softBlock.info[y][x] != 0)
+				return false;
+			if (hardBlock.info[y][x] != 0)
+				return false;
+			if (waterBalloonBlock.info[y][x].what != 0)
+				return false;
+			//모든 블럭이 다 빈곳일 때만 물풍선을 놓을 수 있음
+			if (character[nickname].inWaterBalloon == true)
+				return false;
+			//물풍선 안에 갇혀 있을 때도 물풍선은 놓을 수 없음
+			if (character[nickname].waterballoonMaxNum <= character[nickname].waterballoonNum)
+				return false;
+			//최대 물풍선 개수를 넘길 수 없음.
+			return true;
+		}
+		function setWaterBalloon(x, y, nickname) {
+			//물풍선 소리 나오게하기
+			waterBalloonBlock.info[y][x].length = character[nickname].waterballoonLength;
+			waterBalloonBlock.info[y][x].pop = false;
+			waterBalloonBlock.info[y][x].waitingTime = 0;
+			waterBalloonBlock.info[y][x].boomTime = 0;
+			waterBalloonBlock.info[y][x].what = 'b';
+			waterBalloonBlock.info[y][x].player = nickname;
+			character[nickname].waterballoonNum++;
+		}
+		function balloonTimeAndPop() {
+			for (let y = 0; y < mapConst.MAPHEIGHT; y++) {
+				for (let x = 0; x < mapConst.MAPWIDTH; x++) {
+					if (waterBalloonBlock.info[y][x].what == 'b') {
+						waterBalloonBlock.info[y][x].waitingTime += 1;
+						if (mapConst.wbWaitingTime < waterBalloonBlock.info[y][x].waitingTime)
+							balloonPop(x, y);
+					}
+					else if (waterBalloonBlock.info[y][x]) { //물줄기 상태라면
+						waterBalloonBlock.info[y][x].boomTime += 1;
+						if (mapConst.popTime < waterBalloonBlock.info[y][x].boomTime)
+							waterBalloonBlock.info[y][x].what = 0;
+					}
+				}
+			}
+		}
+		function balloonPop(x, y) {
+			//물풍선 펑 소리 재생
+			waterBalloonBlock.info[y][x].boomTime = 0;
+			waterBalloonBlock.info[y][x].what = 'm';
+			//다 터지고 나면 물풍선을 놓을 수 있음
+			character[waterBalloonBlock.info[y][x].player].waterballoonNum -= 1;
+			//물줄기 길이만큼 상하좌우가 물줄기로 바뀜.
+			//왼쪽
+			for (let i = 1; i <= waterBalloonBlock.info[y][x].length; i++) {
+				//맵밖으로 나가거나 hardBlock을 만나면 반복문 종료
+				if (((x - i) < 0) || (hardBlock.info[y][x - i] != 0))
+					break;
+				//softBlock만나면 블록터뜨리기
+				else if (softBlock.info[y][x - i] != 0) {
+					softBlock.pop[y][x - i] = 1;
+					softBlock.poptime[y][x - i] = 0;
+					break;
+				}
+				//물풍선 만나면 터뜨려버려 !
+				else if (waterBalloonBlock.info[y][x - i].what == 'b')
+					balloonPop(x - i, y);
+				else {
+					waterBalloonBlock.info[y][x - i].what = 'l';
+					waterBalloonBlock.info[y][x - i].boomTime = 0;
+					if (itemBlock.info[y][x - i] != 0)
+						itemBlock.info[y][x - i] = 0;
+				}
+			}
+			//위쪽
+			for (let i = 1; i <= waterBalloonBlock.info[y][x].length; i++) {
+				//맵밖으로 나가거나 hardBlock을 만나면 반복문 종료
+				if (((y - i) < 0) || (hardBlock.info[y - i][x] != 0))
+					break;
+				//softBlock만나면 블록터뜨리기
+				else if (softBlock.info[y - i][x] != 0) {
+					softBlock.pop[y - i][x] = 1;
+					softBlock.poptime[y - i][x] = 0;
+					break;
+				}
+				//물풍선 만나면 터뜨려버려 !
+				else if (waterBalloonBlock.info[y - i][x].what == 'b')
+					balloonPop(x, y - i);
+				else {
+					waterBalloonBlock.info[y - i][x].what = 'u';
+					waterBalloonBlock.info[y - i][x].boomTime = 0;
+					if (itemBlock.info[y - i][x] != 0)
+						itemBlock.info[y - i][x] = 0;
+				}
+			}
+			//오른쪽
+			for (let i = 1; i <= waterBalloonBlock.info[y][x].length; i++) {
+				//맵밖으로 나가거나 hardBlock을 만나면 반복문 종료
+				if (((x + i) >= mapConst.MAPWIDTH) || (hardBlock.info[y][x + i] != 0))
+					break;
+				//softBlock만나면 블록터뜨리기
+				else if (softBlock.info[y][x + i] != 0) {
+					softBlock.pop[y][x + i] = 1;
+					softBlock.poptime[y][x + i] = 0;
+					break;
+				}
+				//물풍선 만나면 터뜨려버려 !
+				else if (waterBalloonBlock.info[y][x + i].what == 'b')
+					balloonPop(x + i, y);
+				else {
+					waterBalloonBlock.info[y][x + i].what = 'r';
+					waterBalloonBlock.info[y][x + i].boomTime = 0;
+					if (itemBlock.info[y][x + i] != 0)
+						itemBlock.info[y][x + i] = 0;
+				}
+			}
+			//아래쪽
+			for (let i = 1; i <= waterBalloonBlock.info[y][x].length; i++) {
+				//맵밖으로 나가거나 hardBlock을 만나면 반복문 종료
+				if (((y + i) < 0) || (hardBlock.info[y + i][x] != 0))
+					break;
+				//softBlock만나면 블록터뜨리기
+				else if (softBlock.info[y + i][x] != 0) {
+					softBlock.pop[y + i][x] = 1;
+					softBlock.poptime[y + i][x] = 0;
+					break;
+				}
+				//물풍선 만나면 터뜨려버려 !
+				else if (waterBalloonBlock.info[y + i][x].what == 'b')
+					balloonPop(x, y + i);
+				else {
+					waterBalloonBlock.info[y + i][x].what = 'd';
+					waterBalloonBlock.info[y + i][x].boomTime = 0;
+					if (itemBlock.info[y + i][x] != 0)
+						itemBlock.info[y + i][x] = 0;
+				}
+			}
+		}
+		function softBlockPop() {
+			for(let y=0; y<mapConst.MAPHEIGHT; y++) {
+				for(let x=0; x<mapConst.MAPWIDTH; x++) {
+					if(softBlock.pop[y][x] == 1) {
+						softBlock.poptime[y][x] +=1;
+						if(mapConst.popTime < softBlock.poptime[y][x]) {
+							softBlock.info[y][x] = 0;
+							softBlock.pop[y][x] = 0;
+							itemBlock.info[y][x] = softBlock.item[y][x];
+						}
+					}
+				}
+			}
+		}
+		function itemTimeFlow() {
+			for(let y=0; y<mapConst.MAPHEIGHT; y++) {
+				for(let x=0; x<mapConst.MAPWIDTH; x++) {
+					if(itemBlock.info[y][x] != 0)
+						itemBlock.time[y][x] +=1;
+				}
+			}
+		}
+
 		function gameDraw() {
 			//배경 그리기
 			ctx.drawImage(bg.bgImage1, 0, 0);
@@ -424,10 +889,81 @@
 			character.nicknames.forEach((nickname) => {
 				chatacterY[nickname] = Math.floor((character[nickname].y + 19) / 40);
 			})
+			const blockMultipleConst = 0.5;
 			for (let y = 0; y < mapConst.MAPHEIGHT; y++) {
+				//softBlock, hardBlock, itemBlock그리기
 				for (let x = 0; x < mapConst.MAPWIDTH; x++) {
+					//softBlock그리기
+					if (softBlock.info[y][x] == 'r') {
+						if (softBlock.pop[y][x] == 0)
+							ctx.drawImage(softBlock.redBlock, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+						else if (Math.floor(softBlock.poptime[y][x] * blockMultipleConst) % 2)
+							ctx.drawImage(softBlock.redBlockPop1, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+						else
+							ctx.drawImage(softBlock.redBlockPop2, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+					}
+					else if (softBlock.info[y][x] == 'o') {
+						if (softBlock.pop[y][x] == 0)
+							ctx.drawImage(softBlock.orangeBlock, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+						else if (Math.floor(softBlock.poptime[y][x] * blockMultipleConst) % 2)
+							ctx.drawImage(softBlock.orangeBlockPop1, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+						else
+							ctx.drawImage(softBlock.orangeBlockPop2, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+					}
+					else if (softBlock.info[y][x] == 'b') {
+						if (softBlock.pop[y][x] == 0)
+							ctx.drawImage(softBlock.brownBlock, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+						else if (Math.floor(softBlock.poptime[y][x] * blockMultipleConst) % 2)
+							ctx.drawImage(softBlock.brownBlockPop1, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+						else
+							ctx.drawImage(softBlock.brownBlockPop2, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 4);
+					}
+					//hardBlock그리기
+					else if (hardBlock.info[y][x] == 'h1') {
+						ctx.drawImage(hardBlock.house1, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 17);
+					}
+					else if (hardBlock.info[y][x] == 'h2') {
+						ctx.drawImage(hardBlock.house2, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 17);
+					}
+					else if (hardBlock.info[y][x] == 't') {
+						ctx.drawImage(hardBlock.tree, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 30);
+					}
+					//itemBlock그리기
+					else if (itemBlock.info[y][x] == 's') {
+						if (Math.floor(itemBlock.time[y][x] * blockMultipleConst) % 2)
+							ctx.drawImage(itemBlock.speed1, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 23);
+						else
+							ctx.drawImage(itemBlock.speed2, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 23);
+					}
+					else if (itemBlock.info[y][x] == 'l') {
+						if (Math.floor(itemBlock.time[y][x] * blockMultipleConst) % 2)
+							ctx.drawImage(itemBlock.waterLength1, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 23);
+						else
+							ctx.drawImage(itemBlock.waterLength2, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 23);
+					}
+					else if (itemBlock.info[y][x] == 'w') {
+						if (Math.floor(itemBlock.time[y][x] * blockMultipleConst) % 2)
+							ctx.drawImage(itemBlock.waterBalloon1, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 23);
+						else
+							ctx.drawImage(itemBlock.waterBalloon2, mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40 - 23);
+					}
+					//물풍선그리기
+					else if (waterBalloonBlock.info[y][x].what == 'b')
+						ctx.drawImage(waterBalloonBlock.img[Math.floor(waterBalloonBlock.info[y][x].waitingTime / 2) % 8], mapConst.WIDTHGAP + x * 40 - 27, mapConst.HEIGHTGAP + y * 40 - 36, 90, 90);
+					else if (waterBalloonBlock.info[y][x].what == 'l')
+						ctx.drawImage(waterBalloonBlock.leftBoom[Math.floor(waterBalloonBlock.info[y][x].boomTime / 2) % 2], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
+					else if (waterBalloonBlock.info[y][x].what == 'u')
+						ctx.drawImage(waterBalloonBlock.upBoom[Math.floor(waterBalloonBlock.info[y][x].boomTime / 2) % 2], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
+					else if (waterBalloonBlock.info[y][x].what == 'r')
+						ctx.drawImage(waterBalloonBlock.rightBoom[Math.floor(waterBalloonBlock.info[y][x].boomTime / 2) % 2], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
+					else if (waterBalloonBlock.info[y][x].what == 'd')
+						ctx.drawImage(waterBalloonBlock.downBoom[Math.floor(waterBalloonBlock.info[y][x].boomTime / 2) % 2], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
+					else if (waterBalloonBlock.info[y][x].what == 'm')
+						ctx.drawImage(waterBalloonBlock.midBoom[Math.floor(waterBalloonBlock.info[y][x].boomTime / 2) % 2], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
 
+					ctx.fillText(itemBlock.info[y][x], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
 				}
+				//캐릭터그리기
 				character.nicknames.forEach((nickname) => {
 					if (chatacterY[nickname] == y)
 						drawCharacter(nickname);
@@ -437,9 +973,30 @@
 			ctx.fillText(JSON.stringify(temproomInfoObj), 10, 150);
 		}
 		function drawCharacter(nickname) {
-			let frame = (int)(character[nickname].walkingTime * 10) % 6;
-			ctx.drawImage(character.downImage[frame], mapConst.WIDTHGAP + character[nickname].x,
-				mapConst.HEIGHTGAP + character[nickname].y - (character.downImage[frame].height - 40));
+			const frame = Math.floor((character[nickname].walkingTime / 2)) % 6;
+			const balloonFrame = Math.floor((character[nickname].inWaterBalloonTime / 2) % 2);
+			if (character[nickname].dead == true)
+				ctx.drawImage(character.deadImage[balloonFrame], mapConst.WIDTHGAP + character[nickname].x,
+					mapConst.HEIGHTGAP + character[nickname].y - (character.deadImage[balloonFrame].height - 40));
+			else if (character[nickname].inWaterBalloon == true)
+				ctx.drawImage(character.inWaterBalloonImage[balloonFrame], mapConst.WIDTHGAP + character[nickname].x,
+					mapConst.HEIGHTGAP + character[nickname].y - (character.inWaterBalloonImage[balloonFrame].height - 40));
+			else if (character[nickname].sight == 'left')
+				ctx.drawImage(character.leftImage[frame], mapConst.WIDTHGAP + character[nickname].x,
+					mapConst.HEIGHTGAP + character[nickname].y - (character.leftImage[frame].height - 40));
+			else if (character[nickname].sight == 'up')
+				ctx.drawImage(character.upImage[frame], mapConst.WIDTHGAP + character[nickname].x,
+					mapConst.HEIGHTGAP + character[nickname].y - (character.upImage[frame].height - 40));
+			else if (character[nickname].sight == 'right')
+				ctx.drawImage(character.rightImage[frame], mapConst.WIDTHGAP + character[nickname].x,
+					mapConst.HEIGHTGAP + character[nickname].y - (character.rightImage[frame].height - 40));
+			else if (character[nickname].sight == 'down')
+				ctx.drawImage(character.downImage[frame], mapConst.WIDTHGAP + character[nickname].x,
+					mapConst.HEIGHTGAP + character[nickname].y - (character.downImage[frame].height - 40));
+			//머리위에 닉네임 그리기
+			ctx.font = "10px Arial";
+			ctx.fillText(nickname, mapConst.WIDTHGAP + character[nickname].x,
+				mapConst.HEIGHTGAP + character[nickname].y - 15);
 		}
 	</script>
 </head>
