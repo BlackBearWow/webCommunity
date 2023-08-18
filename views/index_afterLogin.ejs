@@ -27,8 +27,31 @@
 		let inGame = false; //현재 게임 진행중인가 변수
 		let mainInterval;   //interval변수
 		let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
-		let keyBoard = {'37': false, '38': false, '39': false, '40': false, '32': false};//키보드를 입력했는지 아닌지 확인하는 오브젝트
-		let bgImage1, bgImage2; //배경 이미지 저장변수
+		let keyBoard = { '37': false, '38': false, '39': false, '40': false, '32': false };//키보드를 입력했는지 아닌지 확인하는 오브젝트
+		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20 };	//게임 상수들
+		let mapData; //게임 데이터. 0빈칸 a빨강블럭 b주황블럭 c크아박스 A집1 B집2 C나무
+		const bg = { bgImage1: undefined, bgImage2: undefined, winImage: undefined, closeTime: 0 }; //배경 이미지 저장변수
+		//character는 서버로부터 nickname(name):value를 받아서 해당 property를 추가한다.
+		const character = { leftImage: [], upImage: [], rightImage: [], downImage: [], inWaterBalloonImage: [], deadImage: [], nicknames: [] };
+		const hardBlock = { house1: undefined, house2: undefined, tree: undefined, info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT) }; //안깨지는 블럭
+		const softBlock = {
+			redBlock: undefined, redBlockPop1: undefined, redBlockPop2: undefined, orangeBlock: undefined,
+			orangeBlockPop1: undefined, orangeBlockPop2: undefined, brownBlock: undefined, brownBlockPop1: undefined, brownBlockPop2: undefined,
+			info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT), //무슨 블록인지 저장
+			item: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT), //아이템 정보를 저장
+			pop: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT), //터지는중이면1 터졌거나 멀쩡하면 0
+			poptime: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT) //poptime보다 커지면 터지게 한다.
+		}; //깨지는 블럭
+		const itemBlock = {
+			speed1: undefined, speed2: undefined, waterLength1: undefined, waterLength2: undefined,
+			waterBalloon1: undefined, waterBalloon2: undefined,
+			info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT),
+			time: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT)	//아이템 시간. 반짝이게 보이게 위해 필요한 변수
+		}; //아이템 블럭
+		const waterBalloonBlock = {
+			img: [], leftBoom: [], upBoom: [], rightBoom: [], downBoom: [], midBoom: [],
+			//더 추가해야 함
+		}; //물풍선 블럭
 		$(document).ready(() => {
 			$("#chatText").keydown(function (key) {
 				if (key.keyCode == 13) {
@@ -73,7 +96,7 @@
 					}
 				});
 			});
-			canvasInitialize();
+			beforeGameInitialize();
 		})
 		let socket = io();
 		// 채팅방 접속중이라는것을 알림
@@ -177,12 +200,12 @@
 			}
 			console.log(infoObj);
 		})
-		socket.on('gameStart', () => {
+		socket.on('gameStart', (infoObj) => {
 			$('#beforeGame').hide();
 			$('#can').show();
 			$('#can').focus();
-			inGame=true;
-			gameInitialize();
+			inGame = true;
+			gameInitialize(Object.keys(infoObj));
 		})
 		socket.on('CAKeyboardData', (roomInfoObj) => {
 			receiveFlag = true;
@@ -255,7 +278,7 @@
 				socket.emit('CAChat message', CAChatRoomKey, $('#CAChatText').val());
 				$('#CAChatText').val(``);
 			}
-			else if(inGame) {
+			else if (inGame) {
 				$('#can').focus();
 			}
 		}
@@ -268,25 +291,111 @@
 			img.src = source;
 			return img;
 		}
-		function canvasInitialize() {
+		function beforeGameInitialize() {
 			can = document.getElementById("can");
 			ctx = can.getContext("2d");
-			bgImage1 = makeImage('/images/map/크아인게임.png');
-			bgImage1.onload = () => {
-				ctx.drawImage(bgImage1, 0, 0);
+			//bg 이미지
+			bg.bgImage1 = makeImage('/images/map/크아인게임.png');
+			bg.bgImage2 = makeImage('/images/map/크아배경1.png');
+			bg.winImage = makeImage('/images/map/win.png');
+			//캐릭터 이미지
+			for (let i = 1; i < 7; i++) {
+				character.leftImage.push(makeImage(`/images/bazzi/배찌0${i}.png`));
+				character.upImage.push(makeImage(`/images/bazzi/배찌1${i}.png`));
+				character.rightImage.push(makeImage(`/images/bazzi/배찌2${i}.png`));
+				character.downImage.push(makeImage(`/images/bazzi/배찌3${i}.png`));
 			}
-			bgImage2 = makeImage('/images/map/크아배경1.png');
-			bgImage2.onload = () => {
-				ctx.drawImage(bgImage2, 20, 41);
-			}
-			$('#can').keydown((e) => { 
-				keyBoard[e.keyCode] = true; 
-				if(e.keyCode == 13 && inGame)
+			character.inWaterBalloonImage.push(makeImage(`/images/bazzi/inWaterBalloon1.png`));
+			character.inWaterBalloonImage.push(makeImage(`/images/bazzi/inWaterBalloon2.png`));
+			character.deadImage.push(makeImage(`/images/bazzi/dead.png`));
+			character.deadImage.push(makeImage(`/images/bazzi/dead.png`));
+			//하드 블럭 이미지
+			hardBlock.house1 = makeImage('/images/hardBlock/house1.png');
+			hardBlock.house2 = makeImage('/images/hardBlock/house2.png');
+			hardBlock.tree = makeImage('/images/hardBlock/tree.png');
+			//소프트 블럭 이미지
+			softBlock.redBlock = makeImage('/images/softBlock/redBlock.png');
+			softBlock.redBlockPop1 = makeImage('/images/softBlock/redBlockPop1.png');
+			softBlock.redBlockPop2 = makeImage('/images/softBlock/redBlockPop2.png');
+			softBlock.orangeBlock = makeImage('/images/softBlock/orangeBlock.png');
+			softBlock.orangeBlockPop1 = makeImage('/images/softBlock/orangeBlockPop1.png');
+			softBlock.orangeBlockPop2 = makeImage('/images/softBlock/orangeBlockPop2.png');
+			softBlock.brownBlock = makeImage('/images/softBlock/brownBlock.png');
+			softBlock.brownBlockPop1 = makeImage('/images/softBlock/brownBlockPop1.png');
+			softBlock.brownBlockPop2 = makeImage('/images/softBlock/brownBlockPop2.png');
+			//아이템 블럭 이미지
+			itemBlock.speed1 = makeImage('/images/item/speed1.png');
+			itemBlock.speed2 = makeImage('/images/item/speed2.png');
+			itemBlock.waterBalloon1 = makeImage('/images/item/waterBalloon1.png');
+			itemBlock.waterBalloon2 = makeImage('/images/item/waterBalloon2.png');
+			itemBlock.waterLength1 = makeImage('/images/item/waterLength1.png');
+			itemBlock.waterLength2 = makeImage('/images/item/waterLength2.png');
+			//물풍선 이미지
+			for (let i = 0; i < 8; i++)
+				waterBalloonBlock.img.push(makeImage(`/images/waterBalloon/waterBalloon${i}.png`));
+			waterBalloonBlock.leftBoom.push(makeImage(`/images/waterBalloon/left펑1.png`));
+			waterBalloonBlock.leftBoom.push(makeImage(`/images/waterBalloon/left펑2.png`));
+			waterBalloonBlock.rightBoom.push(makeImage(`/images/waterBalloon/right펑1.png`));
+			waterBalloonBlock.rightBoom.push(makeImage(`/images/waterBalloon/right펑2.png`));
+			waterBalloonBlock.upBoom.push(makeImage(`/images/waterBalloon/up펑1.png`));
+			waterBalloonBlock.upBoom.push(makeImage(`/images/waterBalloon/up펑2.png`));
+			waterBalloonBlock.downBoom.push(makeImage(`/images/waterBalloon/down펑1.png`));
+			waterBalloonBlock.downBoom.push(makeImage(`/images/waterBalloon/down펑2.png`));
+			waterBalloonBlock.midBoom.push(makeImage(`/images/waterBalloon/mid펑1.png`));
+			waterBalloonBlock.midBoom.push(makeImage(`/images/waterBalloon/mid펑2.png`));
+			//맵 데이터 삽입. 0빈칸 a빨강블럭 b주황블럭 c크아박스 A집1 B집2 C나무
+			mapData=[
+			'CCCCCCCCCCCCCCC',
+			'C000aC0C0Ca000C',
+			'C0CAbC0C0CbAC0C',
+			'CbababababababC',
+			'CBbCbAaAaCbBbCC',
+			'Cbabab000bababC',
+			'CCbAaB000BaCbBC',
+			'Cbabab000bababC',
+			'CCbBbAbBbCbCbBC',
+			'CbababababababC',
+			'C0CAbC0C0CbBC0C',
+			'C000aC0C0Ca000C',
+			'CCCCCCCCCCCCCCC'
+			];
+			//키다운 키업 이벤트리스너 등록
+			$('#can').keydown((e) => {
+				keyBoard[e.keyCode] = true;
+				if (e.keyCode == 13 && inGame)
 					$('#CAChatText').focus();
 			})
 			$('#can').keyup((e) => { keyBoard[e.keyCode] = false; })
 		}
-		function gameInitialize() {
+		function make2DemensionArray(x, y) {
+			return Array.from(Array(y), () => new Array(x));
+		}
+		function gameInitialize(nicknames) {
+			//캐릭터를 초기화한다.
+			character.nicknames = nicknames;
+			nicknames.forEach((nickname, index) => {
+				character[nickname] = {
+					inWaterBalloon: false, inWaterBalloonTime: 0,
+					dead: false, sight: 'down',
+					walkingTime: 0, speed: 1,
+					waterballoonSize: 1,	//물줄기 길이
+					waterballoonMaxNum: 1,	//최대 물풍선 개수
+					waterballoonNum: 0,	//현재 물풍선 개수
+					waterballoonCount: 0	//waterballoon에게 넘겨줄 번호. 0~99로 물풍선 놓을 때마다 1씩 커짐.
+				}
+				if (index === 0) {
+					character[nickname].x = 40; character[nickname].y = 40;
+				}
+				else if (index === 1) {
+					character[nickname].x = 40 * 13; character[nickname].y = 40 * 11;
+				}
+			})
+			//블럭들 초기화
+			for(let y=0; y<mapData.length; y++) {
+				for(let x=0; x<mapData[y].length; x++) {
+					
+				}
+			}
 			mainInterval = setInterval(sendData, 20);
 		}
 		function sendData() {
@@ -306,10 +415,31 @@
 			temproomInfoObj = roomInfoObj;
 		}
 		function gameDraw() {
-			ctx.drawImage(bgImage1, 0, 0);
-			ctx.drawImage(bgImage2, 20, 41);
+			//배경 그리기
+			ctx.drawImage(bg.bgImage1, 0, 0);
+			ctx.drawImage(bg.bgImage2, mapConst.WIDTHGAP, mapConst.HEIGHTGAP);
+			//softBlock, hardBlock, itemBlock, waterBalloonBlock, chracter그리기
+			//딱 40x40으로 그리는게 아니라, 키큰건 40픽셀을 넘게 그려야 하므로 같은 y좌표것을 먼저 그린다.
+			let chatacterY = {};
+			character.nicknames.forEach((nickname) => {
+				chatacterY[nickname] = Math.floor((character[nickname].y + 19) / 40);
+			})
+			for (let y = 0; y < mapConst.MAPHEIGHT; y++) {
+				for (let x = 0; x < mapConst.MAPWIDTH; x++) {
+
+				}
+				character.nicknames.forEach((nickname) => {
+					if (chatacterY[nickname] == y)
+						drawCharacter(nickname);
+				})
+			}
 			ctx.font = "15px Arial";
 			ctx.fillText(JSON.stringify(temproomInfoObj), 10, 150);
+		}
+		function drawCharacter(nickname) {
+			let frame = (int)(character[nickname].walkingTime * 10) % 6;
+			ctx.drawImage(character.downImage[frame], mapConst.WIDTHGAP + character[nickname].x,
+				mapConst.HEIGHTGAP + character[nickname].y - (character.downImage[frame].height - 40));
 		}
 	</script>
 </head>

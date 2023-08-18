@@ -82,7 +82,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
         socket.on('iAmReady', (key)=>{
             //room에 내가 ready=true로 한다.
             if(room.CAReady(key, socket.nickname)=='all ready')
-                io.to(key).emit('gameStart');
+                io.to(key).emit('gameStart', room.getCARoomInfo(key));
             io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
         });
         socket.on('disconnecting', () => {
