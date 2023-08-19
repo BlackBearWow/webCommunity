@@ -2,7 +2,7 @@
 <html lang="en" data-bs-theme="light">
 
 <head>
-	<title>mixedGame</title>
+	<title>home - after login</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -27,6 +27,7 @@
 		let inGame = false; //현재 게임 진행중인가 변수
 		let mainInterval;   //interval변수
 		let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
+		let audio = {bg:{}, effect:{}};
 		let keyBoard = { '37': false, '38': false, '39': false, '40': false, '32': false };//키보드를 입력했는지 아닌지 확인하는 오브젝트
 		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20, wbWaitingTime: 140, popTime: 50 };	//게임 상수들
 		const gameVar = { winner: undefined, closeTime: 0 }; //게임 전역 변수
@@ -190,6 +191,8 @@
 			CAChatRoomKey = key;
 			$('#chatCARoomTitle').text(name);
 			$('#CAChatting').empty();
+			// 오디오 재생
+			audio.bg['lobby'].play();
 		})
 		socket.on('CARoomInfo', (infoObj) => {
 			$('#CAUserInfo').empty();
@@ -319,6 +322,16 @@
 			return img;
 		}
 		function beforeGameInitialize() {
+			// 소리
+			audio.bg['lobby'] = new Audio('/sound/lobby.wav');
+			audio.bg['lobby'].loop = true;
+			audio.bg['village'] = new Audio('/sound/village.wav');
+			audio.bg['village'].loop = true;
+			audio.effect['wbSet'] = new Audio('/sound/물풍선.wav');
+			audio.effect['wbPop'] = new Audio('/sound/물풍선펑.wav');
+			audio.effect['item'] = new Audio('/sound/아이템.wav');
+			audio.effect['ready'] = new Audio('/sound/크아뾱.wav');
+			// 캔버스 객체 
 			can = document.getElementById("can");
 			ctx = can.getContext("2d");
 			//bg 이미지
@@ -458,6 +471,9 @@
 					}
 				}
 			}
+			// 오디오 재생
+			audio.bg['lobby'].pause();
+			audio.bg['village'].play();
 			mainInterval = setInterval(sendData, 16);
 		}
 		function sendData() {
@@ -734,6 +750,8 @@
 						character[nickname].waterballoonLength += 1;
 					itemBlock.info[cellY][cellX] = 0;
 					//아이템 먹는 소리 재생
+					audio.effect['item'].currentTime = 0;
+					audio.effect['item'].play();
 				}
 			})
 		}
@@ -785,6 +803,8 @@
 		}
 		function setWaterBalloon(x, y, nickname) {
 			//물풍선 소리 나오게하기
+			audio.effect['wbSet'].currentTime = 0;
+			audio.effect['wbSet'].play();
 			waterBalloonBlock.info[y][x].length = character[nickname].waterballoonLength;
 			waterBalloonBlock.info[y][x].pop = false;
 			waterBalloonBlock.info[y][x].waitingTime = 0;
@@ -811,6 +831,8 @@
 		}
 		function balloonPop(x, y) {
 			//물풍선 펑 소리 재생
+			audio.effect['wbPop'].currentTime = 0;
+			audio.effect['wbPop'].play();
 			waterBalloonBlock.info[y][x].boomTime = 0;
 			waterBalloonBlock.info[y][x].what = 'm';
 			//다 터지고 나면 물풍선을 놓을 수 있음
@@ -979,6 +1001,10 @@
 			character.nicknames.forEach((nickname) => {
 				delete character[nickname];
 			})
+			audio.bg['lobby'].pause();
+			audio.bg['lobby'].currentTime = 0;
+			audio.bg['village'].pause();
+			audio.bg['village'].currentTime = 0;
 		}
 
 		function gameDraw() {
@@ -1193,7 +1219,7 @@
 				<div class="position-relative" id="beforeGame">
 					<img src="/images/map/크아대기실.png">
 					<img class="position-absolute" style="top:495px;left:513px;" src="/images/map/시작.gif"
-						onclick="iAmReady()">
+						onclick="iAmReady()" onmouseover="audio.effect['ready'].play()">
 					<h5 id="chatCARoomTitle" class="position-absolute" style="top:60px;left:90px;">크아채팅방이름</h5>
 					<div id="CAUserInfo">
 

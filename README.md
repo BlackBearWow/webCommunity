@@ -58,6 +58,6 @@ lockstep 동기화 기법을 이용한 멀티플레이 게임 통신
 - [x] lockstep 사용하여 테스트
 - [x] class를 적절히 활용해 initialize
 - [x] logic, draw
-- [] 각종 소리 추가
+- [x] 각종 소리 추가
 
 ### 등등 게임
