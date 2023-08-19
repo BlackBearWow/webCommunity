@@ -56,7 +56,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             io.to(key).emit('chat message', `${socket.nickname}: ${msg}`);
         });
         socket.on('CAChat message', (key, msg) => {
-            io.to(key).emit('CAChat message', `${socket.nickname}: ${msg}`);
+            io.to(key).emit('CAChat message', socket.nickname, msg);
         });
         socket.on("joinChatRoom", (key) => {
             socket.join(key);
@@ -66,8 +66,9 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
         });
         socket.on("joinCAChatRoom", (key, name) => {
             //인원이 꽉찼다면 안된다.
-            if (room.getCARoomPopulation(key) >= 2) {
-                socket.emit('alert', '크아방은 최대 2명까지만 참여 가능합니다');
+            let msg;
+            if (msg = room.canJoinCARoom(key)) {
+                socket.emit('alert', msg);
             }
             //아니라면
             else {
@@ -86,7 +87,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
                 const itemBlockInfo = Array.from(Array(MAPHEIGHT), () => Array(MAPWIDTH).fill(0));
                 for (let y = 0; y < MAPHEIGHT; y++) {
                     for (let x = 0; x < MAPWIDTH; x++) {
-                        const ranNum = Math.floor(Math.random()*3);
+                        const ranNum = Math.floor(Math.random()*10);
                         if(ranNum == 0)
                             itemBlockInfo[y][x] = 's'; //speed
                         else if(ranNum == 1)

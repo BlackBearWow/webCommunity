@@ -37,7 +37,7 @@ class Room {
     makeNewCAChatRoom(name) {
         let key = this.makeDistinctKey();
         this.keys.add(key);
-        this.chatCARoomData[key] = { name, population: 0, maxPopulation: 2, info: {} };
+        this.chatCARoomData[key] = { name, ingame: false, population: 0, maxPopulation: 4, info: {} };
         return key;
     }
     addChatPopulation(key) {
@@ -64,7 +64,10 @@ class Room {
     }
     CAReady(key, nickname) {
         this.chatCARoomData[key].info[nickname].ready = true;
-        if (Object.values(this.chatCARoomData[key].info).every((v) => v.ready == true) && this.chatCARoomData[key].population >= 2) return 'all ready';
+        if (Object.values(this.chatCARoomData[key].info).every((v) => v.ready == true) && this.chatCARoomData[key].population >= 2) {
+            this.chatCARoomData[key].ingame = true;
+            return 'all ready';
+        }
     }
     getCARoomInfo(key) {
         if (!this.chatCARoomData[key]) return false;
@@ -84,21 +87,26 @@ class Room {
     getCAChatRoomList() {
         return this.chatCARoomData;
     }
-    getCARoomPopulation(key) {
-        return this.chatCARoomData[key].population;
+    canJoinCARoom(key) {
+        if (this.chatCARoomData[key].maxPopulation <= this.chatCARoomData[key].population)
+            return '정원 초과로 참가할 수 없습니다';
+        if  (this.chatCARoomData[key].ingame)
+            return '이미 게임을 시작한 방은 참가할 수 없습니다';
+        return false;
     }
-    saveCAKeyboardData(key, nickname, keyboardObject){
+    saveCAKeyboardData(key, nickname, keyboardObject) {
+        //console.log(this.chatCARoomData[key].info);
         this.chatCARoomData[key].info[nickname].keyboard = keyboardObject;
     }
     allCAplayerKeyboardDataReceived(key) {
-        return Object.values(this.chatCARoomData[key].info).every((v)=>v.keyboard);
+        return Object.values(this.chatCARoomData[key].info).every((v) => v.keyboard);
     }
     getCAKeyboardData(key) {
         return this.chatCARoomData[key].info;
     }
     setCAKeyboardDataFalse(key) {
-        for(let nickname of Object.keys(this.chatCARoomData[key].info)) {
-            this.chatCARoomData[key].info[nickname].keyboard=false;
+        for (let nickname of Object.keys(this.chatCARoomData[key].info)) {
+            this.chatCARoomData[key].info[nickname].keyboard = false;
         }
     }
 }

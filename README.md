@@ -56,7 +56,8 @@ lockstep 동기화 기법을 이용한 멀티플레이 게임 통신
 - [x] 크아게임 시작 전, 크아채팅방에 초대 기능
 - [x] 크아채팅방에서 둘 모두 레디라면 게임 시작
 - [x] lockstep 사용하여 테스트
-- [] class를 적절히 활용해 initialize
-- [] logic, draw
+- [x] class를 적절히 활용해 initialize
+- [x] logic, draw
+- [] 각종 소리 추가
 
 ### 등등 게임

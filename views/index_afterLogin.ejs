@@ -28,9 +28,10 @@
 		let mainInterval;   //interval변수
 		let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
 		let keyBoard = { '37': false, '38': false, '39': false, '40': false, '32': false };//키보드를 입력했는지 아닌지 확인하는 오브젝트
-		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20, wbWaitingTime: 200, popTime: 100 };	//게임 상수들
+		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20, wbWaitingTime: 140, popTime: 50 };	//게임 상수들
+		const gameVar = { winner: undefined, closeTime: 0 }; //게임 전역 변수
 		let mapData; //게임 데이터. 0빈칸 a빨강블럭 b주황블럭 c크아박스 A집1 B집2 C나무
-		const bg = { bgImage1: undefined, bgImage2: undefined, winImage: undefined, closeTime: 0 }; //배경 이미지 저장변수
+		const bg = { bgImage1: undefined, bgImage2: undefined, winImage: undefined }; //배경 이미지 저장변수
 		//character는 서버로부터 nickname(name):value를 받아서 해당 property를 추가한다.
 		const character = { leftImage: [], upImage: [], rightImage: [], downImage: [], inWaterBalloonImage: [], deadImage: [], nicknames: [] };
 		const hardBlock = { house1: undefined, house2: undefined, tree: undefined, info: make2DemensionArray(mapConst.MAPWIDTH, mapConst.MAPHEIGHT, 0) }; //안깨지는 블럭
@@ -149,9 +150,15 @@
 			$('#chatting').append(`<li class="list-group-item">${msg}</li>`);
 			$('#showChat').scrollTop($('#showChat')[0].scrollHeight);
 		})
-		socket.on('CAChat message', (msg) => {
-			$('#CAChatting').append(`<li class="list-group-item">${msg}</li>`);
-			$('#CAChatDiv').scrollTop($('#CAChatDiv')[0].scrollHeight);
+		socket.on('CAChat message', (nickname, msg) => {
+			if (inGame) {
+				character[nickname].msg = msg;
+				character[nickname].msgTime = 100;
+			}
+			else {
+				$('#CAChatting').append(`<li class="list-group-item">${nickname}: ${msg}</li>`);
+				$('#CAChatDiv').scrollTop($('#CAChatDiv')[0].scrollHeight);
+			}
 		})
 		socket.on('inviteChatRoom', (who, key, name) => {
 			//data는 who, key, name으로 구성되어야 한다.
@@ -199,6 +206,21 @@
 					$('#CAUserInfo').append(`<h6 class="position-absolute text-white" style="top:215px;left:138px;">${nickname}</h6>`);
 					$('#CAUserInfo').append(`<h6 class="position-absolute text-warning" style="top:235px;left:138px;">${val.ready ? '준비완료' : '준비중'}</h6>`);
 				}
+				else if (i == 2) {
+					$('#CAUserInfo').append(`<img class="position-absolute" style="top:140px;left:265px;" src="/images/bazzi/배찌31.png">`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-white" style="top:215px;left:243px;">${nickname}</h6>`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-warning" style="top:235px;left:243px;">${val.ready ? '준비완료' : '준비중'}</h6>`);
+				}
+				else if (i == 3) {
+					$('#CAUserInfo').append(`<img class="position-absolute" style="top:140px;left:370px;" src="/images/bazzi/배찌31.png">`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-white" style="top:215px;left:348px;">${nickname}</h6>`);
+					$('#CAUserInfo').append(`<h6 class="position-absolute text-warning" style="top:235px;left:348px;">${val.ready ? '준비완료' : '준비중'}</h6>`);
+				}
+			}
+			//게임중일 때 상대방이 나간다면 게임 종료
+			if (inGame && (infoList.length != character.nicknames.length)) {
+				alert("상대방이 종료했습니다");
+				closeInGame();
 			}
 			console.log(infoObj);
 		})
@@ -232,6 +254,7 @@
 				chatRoomKey = false;
 			}
 			else if (CAChatRoomKey) {
+				clearInterval(mainInterval);
 				socket.emit("exitCAChatRoom", CAChatRoomKey);
 				CAChatRoomKey = false;
 			}
@@ -245,6 +268,8 @@
 		function showMakeCARoom() {
 			$('.rightDiv').hide();
 			$('#showMakeCARoom').show();
+			$('#beforeGame').show();
+			$('#can').hide();
 			exitCurrentRoom();
 		}
 		function showChat() {
@@ -385,16 +410,24 @@
 				character[nickname] = {
 					inWaterBalloon: false, inWaterBalloonTime: 0,
 					dead: false, sight: 'down',
-					walkingTime: 0, speed: 1,
+					walkingTime: 0, speed: 2,
 					waterballoonLength: 1,	//물줄기 길이
 					waterballoonMaxNum: 1,	//최대 물풍선 개수
-					waterballoonNum: 0	//현재 물풍선 개수
+					waterballoonNum: 0,	//현재 물풍선 개수
+					msg: undefined, //메시지
+					msgTime: 0 //메시지 보이기 시간
 				}
 				if (index === 0) {
 					character[nickname].x = 40; character[nickname].y = 40;
 				}
 				else if (index === 1) {
 					character[nickname].x = 40 * 13; character[nickname].y = 40 * 11;
+				}
+				else if (index === 2) {
+					character[nickname].x = 40; character[nickname].y = 40 * 11;
+				}
+				else if (index === 3) {
+					character[nickname].x = 40 * 13; character[nickname].y = 40;
 				}
 			})
 			//블럭들 초기화
@@ -434,47 +467,51 @@
 				receiveFlag = false;
 			}
 		}
+		
 		function oneFrame(roomInfoObj) {
 			//여기에 데이터를 이용해 한 프레임을 담당하는 것을 진행해야 한다.
 			gameLogic(roomInfoObj);
 			gameDraw();
 		}
-		let temproomInfoObj;
 		function gameLogic(roomInfoObj) {
 			characterMove(roomInfoObj);
 			getItem();
+			msgTimeFlow();
 			pressBalloon(roomInfoObj);
 			balloonTimeAndPop();
 			softBlockPop();
 			itemTimeFlow();
-			temproomInfoObj = roomInfoObj;
+			meetWaterBalloonBoom();
+			inWaterBalloonDo();
+			whoIsWin();
 		}
 		function characterMove(roomInfoObj) {
 			character.nicknames.forEach((nickname) => {
 				const cellX = Math.floor(character[nickname].x / 40);
 				const cellY = Math.floor(character[nickname].y / 40);
+				const speed = character[nickname].inWaterBalloon ? 1 : character[nickname].speed;
 				if (roomInfoObj[nickname].keyboard.left) {
 					character[nickname].sight = 'left';
 					character[nickname].walkingTime++;
 					if (character[nickname].x % 40 == 0) { //왼쪽으로 움직일 때 좌우가 딱 가운데일 때
 						if (character[nickname].y % 40 == 0) { //상하도 가운데라면 왼쪽칸만 빈공간이면 움직임.
 							if (IsThereEmpty(cellX - 1, cellY))
-								character[nickname].x -= character[nickname].speed;
+								character[nickname].x -= speed;
 						}
 						else { //상하가 가운데가 아니라면
 							//왼쪽 위와 아래가 둘다 뚫렸다면 움직임
 							if (IsThereEmpty(cellX - 1, cellY) && IsThereEmpty(cellX - 1, cellY + 1))
-								character[nickname].x -= character[nickname].speed;
+								character[nickname].x -= speed;
 							//왼쪽위는 막히고 왼쪽아래가 뚤렸을 때 아래로 움직임
 							else if ((IsThereEmpty(cellX - 1, cellY) == false) && IsThereEmpty(cellX - 1, cellY + 1)) {
-								character[nickname].y += character[nickname].speed;
+								character[nickname].y += speed;
 								//아래 칸보다 더 넘어가면 상하를 맞춰줌.
 								if (cellY < Math.floor(character[nickname].y / 40))
 									character[nickname].y = (cellY + 1) * 40;
 							}
 							//왼쪽아래가 막혔을때 왼쪽위로 움직임
 							else if (IsThereEmpty(cellX - 1, cellY) && (IsThereEmpty(cellX - 1, cellY + 1) == false)) {
-								character[nickname].y -= character[nickname].speed;
+								character[nickname].y -= speed;
 								//현재 칸을 넘어가면 상하를 맞춰줌.
 								if (Math.floor(character[nickname].y / 40) < cellY)
 									character[nickname].y = cellY * 40;
@@ -482,7 +519,7 @@
 						}
 					}
 					else { //좌우가 가운데가 아닐 때
-						const gox = character[nickname].x - character[nickname].speed;
+						const gox = character[nickname].x - speed;
 						const goCellX = Math.floor(gox / 40);
 						if (character[nickname].y % 40 == 0) { //상하가 가운데일 때
 							if (goCellX == cellX) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
@@ -515,22 +552,22 @@
 					if (character[nickname].y % 40 == 0) { //위로 움직일때 상하가 딱 가운데일때
 						if (character[nickname].x % 40 == 0) { //좌우도 가운데라면 위쪽칸만 빈공간이면 움직임.
 							if (IsThereEmpty(cellX, cellY - 1))
-								character[nickname].y -= character[nickname].speed;
+								character[nickname].y -= speed;
 						}
 						else { //좌우가 가운데가 아니라면
 							//왼쪽 위와 오른쪽 위가 둘다 뚫렸다면 움직임
 							if (IsThereEmpty(cellX, cellY - 1) && IsThereEmpty(cellX + 1, cellY - 1))
-								character[nickname].y -= character[nickname].speed;
+								character[nickname].y -= speed;
 							//왼쪽위는 막히고 오른쪽 위가 뚤렸을 때 오른쪽으로 움직임
 							else if ((IsThereEmpty(cellX, cellY - 1) == false) && IsThereEmpty(cellX + 1, cellY - 1)) {
-								character[nickname].x += character[nickname].speed;
+								character[nickname].x += speed;
 								//오른쪽 칸보다 더 넘어가면 좌우를 맞춰줌.
 								if (cellX < Math.floor(character[nickname].x / 40))
 									character[nickname].x = (cellX + 1) * 40;
 							}
 							//오른쪽위가 막혔을때 왼쪽위로 움직임
 							else if (IsThereEmpty(cellX, cellY - 1) && (IsThereEmpty(cellX + 1, cellY - 1) == false)) {
-								character[nickname].x -= character[nickname].speed;
+								character[nickname].x -= speed;
 								//현재 칸을 넘어가면 좌우를 맞춰줌.
 								if (Math.floor(character[nickname].x / 40) < cellX)
 									character[nickname].x = cellX * 40;
@@ -538,7 +575,7 @@
 						}
 					}
 					else {	//상하가 가운데가 아닐 때
-						const goy = character[nickname].y - character[nickname].speed;
+						const goy = character[nickname].y - speed;
 						const goCellY = Math.floor(goy / 40);
 						if (character[nickname].x % 40 == 0) { //좌우가 가운데일 때
 							if (goCellY == cellY) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
@@ -571,22 +608,22 @@
 					if (character[nickname].x % 40 == 0) { //오른쪽으로 움직일 때 좌우가 딱 가운데일 때
 						if (character[nickname].y % 40 == 0) { //상하도 가운데라면 오른쪽칸만 빈공간이면 움직임.
 							if (IsThereEmpty(cellX + 1, cellY))
-								character[nickname].x += character[nickname].speed;
+								character[nickname].x += speed;
 						}
 						else { //상하가 가운데가 아니라면
 							//오른쪽 위와 아래가 둘다 뚫렸다면 움직임
 							if (IsThereEmpty(cellX + 1, cellY) && IsThereEmpty(cellX + 1, cellY + 1))
-								character[nickname].x += character[nickname].speed;
+								character[nickname].x += speed;
 							//오른쪽위는 막히고 오른쪽아래가 뚤렸을 때 아래로 움직임
 							else if ((IsThereEmpty(cellX + 1, cellY) == false) && IsThereEmpty(cellX + 1, cellY + 1)) {
-								character[nickname].y += character[nickname].speed;
+								character[nickname].y += speed;
 								//아래 칸보다 더 넘어가면 상하를 맞춰줌.
 								if (cellY < Math.floor(character[nickname].y / 40))
 									character[nickname].y = (cellY + 1) * 40;
 							}
 							//오른쪽아래가 막혔을때 오른쪽위로 움직임
 							else if (IsThereEmpty(cellX + 1, cellY) && (IsThereEmpty(cellX + 1, cellY + 1) == false)) {
-								character[nickname].y -= character[nickname].speed;
+								character[nickname].y -= speed;
 								//현재 칸을 넘어가면 상하를 맞춰줌.
 								if (Math.floor(character[nickname].y / 40) < cellY)
 									character[nickname].y = cellY * 40;
@@ -594,7 +631,7 @@
 						}
 					}
 					else { //좌우가 가운데가 아닐 때
-						const gox = character[nickname].x + character[nickname].speed;
+						const gox = character[nickname].x + speed;
 						const goCellX = Math.floor(gox / 40);
 						if (character[nickname].y % 40 == 0) { //상하가 가운데일 때
 							if (goCellX == cellX) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
@@ -627,22 +664,22 @@
 					if (character[nickname].y % 40 == 0) { //아래로 움직일때 상하가 딱 가운데일때
 						if (character[nickname].x % 40 == 0) { //좌우도 가운데라면 아래칸만 빈공간이면 움직임.
 							if (IsThereEmpty(cellX, cellY + 1))
-								character[nickname].y += character[nickname].speed;
+								character[nickname].y += speed;
 						}
 						else { //좌우가 가운데가 아니라면
 							//왼쪽 아래와 오른쪽 아래가 둘다 뚫렸다면 움직임
 							if (IsThereEmpty(cellX, cellY + 1) && IsThereEmpty(cellX + 1, cellY + 1))
-								character[nickname].y += character[nickname].speed;
+								character[nickname].y += speed;
 							//왼쪽아래는 막히고 오른쪽 아래가 뚤렸을 때 오른쪽으로 움직임
 							else if ((IsThereEmpty(cellX, cellY + 1) == false) && IsThereEmpty(cellX + 1, cellY + 1)) {
-								character[nickname].x += character[nickname].speed;
+								character[nickname].x += speed;
 								//오른쪽 칸보다 더 넘어가면 좌우를 맞춰줌.
 								if (cellX < Math.floor(character[nickname].x / 40))
 									character[nickname].x = (cellX + 1) * 40;
 							}
 							//오른쪽아래가 막혔을때 왼쪽아래로 움직임
 							else if (IsThereEmpty(cellX, cellY + 1) && (IsThereEmpty(cellX + 1, cellY + 1) == false)) {
-								character[nickname].x -= character[nickname].speed;
+								character[nickname].x -= speed;
 								//현재 칸을 넘어가면 좌우를 맞춰줌.
 								if (Math.floor(character[nickname].x / 40) < cellX)
 									character[nickname].x = cellX * 40;
@@ -650,7 +687,7 @@
 						}
 					}
 					else {	//상하가 가운데가 아닐 때
-						const goy = character[nickname].y + character[nickname].speed;
+						const goy = character[nickname].y + speed;
 						const goCellY = Math.floor(goy / 40);
 						if (character[nickname].x % 40 == 0) { //좌우가 가운데일 때
 							if (goCellY == cellY) { //현재 캐릭터칸과 움직일 칸이 같으면 움직임
@@ -684,6 +721,7 @@
 		}
 		function getItem() {
 			character.nicknames.forEach((nickname) => {
+				if (character[nickname].inWaterBalloon) return;
 				const cellX = Math.floor((character[nickname].x + 20) / 40);
 				const cellY = Math.floor((character[nickname].y + 20) / 40);
 				const item = itemBlock.info[cellY][cellX];
@@ -696,6 +734,13 @@
 						character[nickname].waterballoonLength += 1;
 					itemBlock.info[cellY][cellX] = 0;
 					//아이템 먹는 소리 재생
+				}
+			})
+		}
+		function msgTimeFlow() {
+			character.nicknames.forEach((nickname)=>{
+				if(character[nickname].msgTime) {
+					character[nickname].msgTime--;
 				}
 			})
 		}
@@ -857,11 +902,11 @@
 			}
 		}
 		function softBlockPop() {
-			for(let y=0; y<mapConst.MAPHEIGHT; y++) {
-				for(let x=0; x<mapConst.MAPWIDTH; x++) {
-					if(softBlock.pop[y][x] == 1) {
-						softBlock.poptime[y][x] +=1;
-						if(mapConst.popTime < softBlock.poptime[y][x]) {
+			for (let y = 0; y < mapConst.MAPHEIGHT; y++) {
+				for (let x = 0; x < mapConst.MAPWIDTH; x++) {
+					if (softBlock.pop[y][x] == 1) {
+						softBlock.poptime[y][x] += 1;
+						if (mapConst.popTime < softBlock.poptime[y][x]) {
 							softBlock.info[y][x] = 0;
 							softBlock.pop[y][x] = 0;
 							itemBlock.info[y][x] = softBlock.item[y][x];
@@ -871,12 +916,69 @@
 			}
 		}
 		function itemTimeFlow() {
-			for(let y=0; y<mapConst.MAPHEIGHT; y++) {
-				for(let x=0; x<mapConst.MAPWIDTH; x++) {
-					if(itemBlock.info[y][x] != 0)
-						itemBlock.time[y][x] +=1;
+			for (let y = 0; y < mapConst.MAPHEIGHT; y++) {
+				for (let x = 0; x < mapConst.MAPWIDTH; x++) {
+					if (itemBlock.info[y][x] != 0)
+						itemBlock.time[y][x] += 1;
 				}
 			}
+		}
+		function meetWaterBalloonBoom() {
+			character.nicknames.forEach((nickname) => {
+				const cellX = Math.floor((character[nickname].x + 20) / 40);
+				const cellY = Math.floor((character[nickname].y + 20) / 40);
+				if (waterBalloonBlock.info[cellY][cellX].what != 0 && waterBalloonBlock.info[cellY][cellX].what != 'b')
+					character[nickname].inWaterBalloon = true;
+			})
+		}
+		function inWaterBalloonDo() {
+			character.nicknames.forEach((nickname) => {
+				if (character[nickname].inWaterBalloon == true) {
+					character[nickname].inWaterBalloonTime += 1;
+					if (300 <= character[nickname].inWaterBalloonTime)
+						character[nickname].dead = true;
+					//물풍선에 갇혀있을 때 상대방에 닿는다면 실패
+					character.nicknames.forEach((otherNickname) => {
+						if (otherNickname == nickname) return;
+						if (character[otherNickname].inWaterBalloon == false) {
+							const myCellX = Math.floor((character[nickname].x + 20) / 40);
+							const myCellY = Math.floor((character[nickname].y + 20) / 40);
+							const otherCellX = Math.floor((character[otherNickname].x + 20) / 40);
+							const otherCellY = Math.floor((character[otherNickname].y + 20) / 40);
+							if ((myCellX == otherCellX) && (myCellY == otherCellY))
+								character[nickname].dead = true;
+						}
+					})
+				}
+			})
+		}
+		function whoIsWin() {
+			let deadPlayerCount = 0;
+			let winner;
+			character.nicknames.forEach((nickname) => {
+				if (character[nickname].dead)
+					deadPlayerCount++;
+				else
+					winner = nickname;
+			})
+			if (deadPlayerCount == (character.nicknames.length - 1))
+				gameVar.winner = winner;
+			// 한명이 사라남고 나머지가 모두 죽었다면 그 사람이 승.
+			if (gameVar.winner) {
+				gameVar.closeTime += 1;
+				if (300 < gameVar.closeTime)
+					closeInGame();
+			}
+		}
+		function closeInGame() {
+			clearInterval(mainInterval);
+			showMakeCARoom();
+			gameVar.winner = undefined;
+			gameVar.closeTime = 0;
+			inGame = false;
+			character.nicknames.forEach((nickname) => {
+				delete character[nickname];
+			})
 		}
 
 		function gameDraw() {
@@ -960,8 +1062,6 @@
 						ctx.drawImage(waterBalloonBlock.downBoom[Math.floor(waterBalloonBlock.info[y][x].boomTime / 2) % 2], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
 					else if (waterBalloonBlock.info[y][x].what == 'm')
 						ctx.drawImage(waterBalloonBlock.midBoom[Math.floor(waterBalloonBlock.info[y][x].boomTime / 2) % 2], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
-
-					ctx.fillText(itemBlock.info[y][x], mapConst.WIDTHGAP + x * 40, mapConst.HEIGHTGAP + y * 40);
 				}
 				//캐릭터그리기
 				character.nicknames.forEach((nickname) => {
@@ -969,8 +1069,16 @@
 						drawCharacter(nickname);
 				})
 			}
-			ctx.font = "15px Arial";
-			ctx.fillText(JSON.stringify(temproomInfoObj), 10, 150);
+			if (gameVar.winner) {
+				if(nickname == gameVar.winner)
+					ctx.drawImage(bg.winImage, 270, 100);
+				else {
+					ctx.fillStyle = 'gray'; ctx.strokeStyle = 'black';
+					ctx.font = "bolder 130px Arial";
+					ctx.fillText('LOSE', 200, 150);
+					ctx.strokeText('LOSE', 200, 150);
+				}
+			}
 		}
 		function drawCharacter(nickname) {
 			const frame = Math.floor((character[nickname].walkingTime / 2)) % 6;
@@ -996,7 +1104,16 @@
 			//머리위에 닉네임 그리기
 			ctx.font = "10px Arial";
 			ctx.fillText(nickname, mapConst.WIDTHGAP + character[nickname].x,
-				mapConst.HEIGHTGAP + character[nickname].y - 15);
+			mapConst.HEIGHTGAP + character[nickname].y - 15);
+			//머리위에 메시지 그리기
+			if(character[nickname].msgTime) {
+				ctx.fillStyle = 'black'; ctx.strokeStyle = 'yellow';
+				ctx.font = "bolder 20px Arial";
+				ctx.fillText(character[nickname].msg,  mapConst.WIDTHGAP + character[nickname].x,
+				mapConst.HEIGHTGAP + character[nickname].y - 25);
+				ctx.strokeText(character[nickname].msg,  mapConst.WIDTHGAP + character[nickname].x,
+				mapConst.HEIGHTGAP + character[nickname].y - 25);
+			}
 		}
 	</script>
 </head>
