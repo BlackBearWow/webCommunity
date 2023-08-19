@@ -238,6 +238,15 @@
 			receiveFlag = true;
 			oneFrame(roomInfoObj);
 		})
+		function changeVolume(val) {
+			audio.bg['lobby'].volume = val/100;
+			audio.bg['village'].volume = val/100;
+			audio.effect['wbSet'].volume = val/100;
+			audio.effect['wbPop'].volume = val/100;
+			audio.effect['item'].volume = val/100;
+			audio.effect['ready'].volume = val/100;
+			$('#soundValue').text(`소리: ${val}`);
+		}
 		function inviteChatRoom(nickname) {
 			if (!chatRoomKey && !CAChatRoomKey) {
 				alert('현재 채팅방에 참여하지 않았습니다.');
@@ -1153,7 +1162,7 @@
 				<%- navText %>
 			</nav>
 		</div>
-		<div class="row h-75 w-100">
+		<div class="row w-100" style="height: 80%;">
 			<div class="col-3 border mh-100 overflow-auto">
 				<h4>접속중</h4>
 				<hr>
@@ -1219,7 +1228,7 @@
 				<div class="position-relative" id="beforeGame">
 					<img src="/images/map/크아대기실.png">
 					<img class="position-absolute" style="top:495px;left:513px;" src="/images/map/시작.gif"
-						onclick="iAmReady()" onmouseover="audio.effect['ready'].play()">
+						onclick="iAmReady()" onmouseover="audio.effect['ready'].currentTime=0;audio.effect['ready'].play();">
 					<h5 id="chatCARoomTitle" class="position-absolute" style="top:60px;left:90px;">크아채팅방이름</h5>
 					<div id="CAUserInfo">
 
@@ -1233,7 +1242,8 @@
 				</div>
 				<canvas id="can" width="800" height="600" style="display: none;" tabindex='1'></canvas>
 				<input type="text" class="form-control" id="CAChatText" placeholder="채팅" maxlength="20" required>
-				<!--input type="button" class="btn btn-success" value="보내기" id="sendChat" onclick="sendCAChat()"-->
+				<a id="soundValue">소리:100</a>
+				<input type="range" class="form-range" min="0" max="100" step="1" id="soundRange" onchange="changeVolume(this.value)" value="100">
 			</div>
 		</div>
 		<div id="toasts" class="toast-container bottom-0 end-0 p-2">
