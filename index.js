@@ -18,6 +18,7 @@ app.set('view engine', 'ejs');
 // Function to serve static files
 app.use('/images', express.static('images'));
 app.use('/sound', express.static('sound'));
+app.use('/js', express.static('static/js'));
 
 //room은 새로운 파일로 만들어 따로 관리하자.
 const roomModule = require('./room');

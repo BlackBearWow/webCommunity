@@ -15,6 +15,7 @@
 	<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="/js/main.js"></script>
 	<script>
 		// 내 닉네임
 		let nickname;
@@ -148,7 +149,7 @@
 			}
 		})
 		socket.on('chat message', (msg) => {
-			$('#chatting').append(`<li class="list-group-item">${msg}</li>`);
+			$('#chatting').append(`<li class="list-group-item">${escapeHtml(msg)}</li>`);
 			$('#showChat').scrollTop($('#showChat')[0].scrollHeight);
 		})
 		socket.on('CAChat message', (nickname, msg) => {
@@ -157,7 +158,7 @@
 				character[nickname].msgTime = 100;
 			}
 			else {
-				$('#CAChatting').append(`<li class="list-group-item">${nickname}: ${msg}</li>`);
+				$('#CAChatting').append(`<li class="list-group-item">${nickname}: ${escapeHtml(msg)}</li>`);
 				$('#CAChatDiv').scrollTop($('#CAChatDiv')[0].scrollHeight);
 			}
 		})
@@ -490,6 +491,10 @@
 				const keyBoardDataObj = { left: keyBoard[37], up: keyBoard[38], right: keyBoard[39], down: keyBoard[40], space: keyBoard[32] };
 				socket.emit('keyBoardData', CAChatRoomKey, keyBoardDataObj);
 				receiveFlag = false;
+				console.log('send');
+			}
+			else {
+				console.log(`don't send: falg is false`);
 			}
 		}
 		
