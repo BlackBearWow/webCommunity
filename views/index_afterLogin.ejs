@@ -248,8 +248,8 @@
 				timeInterval = 0;
 			setTimeout(() => {
 				beforeTime += delay;
-				oneFrame(roomInfoObj);
 				sendData();
+				oneFrame(roomInfoObj);
 			}, -timeInterval);
 		})
 		function changeVolume(val) {
@@ -505,7 +505,8 @@
 		}
 		function sendData() {
 			const keyBoardDataObj = { left: keyBoard[37], up: keyBoard[38], right: keyBoard[39], down: keyBoard[40], space: keyBoard[32] };
-			socket.emit('keyBoardData', CAChatRoomKey, keyBoardDataObj);
+			if(CAChatRoomKey) //참여상태가 아닐 때 전송하면 서버에서 에러가 남.
+				socket.emit('keyBoardData', CAChatRoomKey, keyBoardDataObj);
 		}
 
 		function oneFrame(roomInfoObj) {
