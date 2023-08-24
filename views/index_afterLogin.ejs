@@ -34,7 +34,7 @@
 		//let receiveFlag = true;    //서버로부터 정보를 받았는지 확인하는 플래그. true라면 서버에 정보를 전송, 아니라면 전송하지 않는다.
 		let audio = { bg: {}, effect: {} };
 		let keyBoard = { '37': false, '38': false, '39': false, '40': false, '32': false };//키보드를 입력했는지 아닌지 확인하는 오브젝트
-		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20, wbWaitingTime: 140, popTime: 50 };	//게임 상수들
+		const mapConst = { MAPHEIGHT: 13, MAPWIDTH: 15, HEIGHTGAP: 41, WIDTHGAP: 20, wbWaitingTime: 170, popTime: 50 };	//게임 상수들
 		const gameVar = { winner: undefined, closeTime: 0 }; //게임 전역 변수
 		let mapData; //게임 데이터. 0빈칸 a빨강블럭 b주황블럭 c크아박스 A집1 B집2 C나무
 		const bg = { bgImage1: undefined, bgImage2: undefined, winImage: undefined }; //배경 이미지 저장변수
@@ -243,11 +243,9 @@
 			currentTime = new Date().getTime();
 			timeInterval = currentTime - beforeTime;
 			//console.log(`c: ${currentTime}, b: ${beforeTime}, interval: ${timeInterval}`);
-			if (timeInterval >= delay) {
-				beforeTime += delay;
-				oneFrame(roomInfoObj);
-				sendData();
-			}
+			// delay보다 늦어졌으면 당장 실행하고, 아니라면 timeInterval시간만큼 뒤에 실행하기
+			if (timeInterval >= delay)
+				timeInterval = 0;
 			setTimeout(() => {
 				beforeTime += delay;
 				oneFrame(roomInfoObj);

@@ -16,6 +16,9 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             const sessionID = connect_sid.match(/(?<=s%3A)[^.]+/)[0];
             if (sessionID) {
                 session_store.get(sessionID, function (err, session) {
+                    if(!session.nickname) { //session이 만료된 거라면 nickname을 읽을 수 없다. disconnect한다.
+                        socket.emit("disconnect");
+                    }
                     socket.nickname = session.nickname;
                     //초대메시지를 받기 위해 자신의 닉네임 room에 join한다.
                     socket.join(socket.nickname);
@@ -87,7 +90,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
                 const itemBlockInfo = Array.from(Array(MAPHEIGHT), () => Array(MAPWIDTH).fill(0));
                 for (let y = 0; y < MAPHEIGHT; y++) {
                     for (let x = 0; x < MAPWIDTH; x++) {
-                        const ranNum = Math.floor(Math.random()*10);
+                        const ranNum = Math.floor(Math.random()*5);
                         if(ranNum == 0)
                             itemBlockInfo[y][x] = 's'; //speed
                         else if(ranNum == 1)
