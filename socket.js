@@ -10,6 +10,9 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
     io.on('connection', (socket) => {
         socket.on("indexPage", () => {
             socket.join('index');
+            if(!socket.request.headers.cookie) {
+                socket.emit("disconnect");
+            }
             //express-session 값을 알아내기 위해 cookie값을 알아낸다.
             const connect_sid = socket.request.headers.cookie.match(/(?<=connect.sid=)[^;]+/)[0];
             //cookie값의 일부분이 sessionID이다. 해당 부분을 추출한다.
