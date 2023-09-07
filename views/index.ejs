@@ -33,9 +33,9 @@
                 <tbody id="posts">
                     <% for (const row of rows) { %>
                         <tr onclick="location.href='viewPost/<%=row.bId%>'">
-                            <td><%=row.title%></td>
+                            <td><%-row.title%></td>
                             <td><%=row.commentNum%></td>
-                            <td scope="row"><%=row.nickname%></td>
+                            <td scope="row"><%-row.nickname%></td>
                         </tr>
                     <% } %>
                 </tbody>

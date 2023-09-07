@@ -29,9 +29,9 @@
                     // 브라우저의 로케일에 따라 한국 시간으로 변환하여 표시
                     const koreaTime = utcDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
                     $('#postTime').text(koreaTime);
-                    $('#postTitle').text(`제목: ${row.title}`);
-                    $('#postUser').text(`게시자: ${row.nickname}`);
-                    $('#postText').text(row.text);
+                    $('#postTitle').html(`제목: ${row.title}`);
+                    $('#postUser').html(`게시자: ${row.nickname}`);
+                    $('#postText').html(row.text);
                     if(row.nickname === nickname){
                         $('.postButton').show();
                     }

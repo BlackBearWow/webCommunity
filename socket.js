@@ -1,7 +1,7 @@
 //socket.js
 const { Server } = require("socket.io");
 const roomModule = require('./room');
-
+const util = require('./util');
 
 
 module.exports = (server, session_store, room = new roomModule.Room) => {
@@ -60,10 +60,10 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
         });
         socket.on('chat message', (key, msg) => {
-            io.to(key).emit('chat message', `${socket.nickname}: ${msg}`);
+            io.to(key).emit('chat message', `${socket.nickname}: ${util.escapeHtml(msg)}`);
         });
         socket.on('CAChat message', (key, msg) => {
-            io.to(key).emit('CAChat message', socket.nickname, msg);
+            io.to(key).emit('CAChat message', socket.nickname, util.escapeHtml(msg));
         });
         socket.on("joinChatRoom", (key) => {
             socket.join(key);

@@ -9,6 +9,7 @@ const MemoryStore = require('memorystore')(session);
 const DB = require('./db');
 const hash = require('./hash');
 const logInOutStr = require('./logInOutStr');
+const util = require('./util');
 
 app.use(express.json());
 app.use(express.urlencoded());
@@ -105,7 +106,7 @@ app.get('/signUp', (req, res) => {
 app.get('/canISignUp', async (req, res) => {
     const id = req.query.id;
     const passwd = req.query.passwd;
-    const nickname = req.query.nickname;
+    const nickname = util.escapeHtml(req.query.nickname);
     //중복된 id가 있다면 오류.
     let rows = await DB.select(`select count(*) from account where userId='${id}'`);
     if (rows[0]['count(*)'] !== 0) {
@@ -240,8 +241,8 @@ app.post('/sendPost', async (req, res) => {
         res.send(`error: no login`);
         return;
     }
-    const title = req.body.title;
-    const text = req.body.text;
+    const title = util.escapeHtml(req.body.title);
+    const text = util.escapeHtml(req.body.text);
     const userId = req.session.userId;
     const nickname = req.session.nickname;
     await DB.insertPost(title, text, userId, nickname);
@@ -273,7 +274,7 @@ app.get(`/getCommentBybId/:bId`, async (req, res) => {
 app.get(`/sendComment/:bId`, async (req, res) => {
     if (req.session.userId ? true : false) {
         const bId = req.params.bId;
-        const cText = req.query.cText;
+        const cText = util.escapeHtml(req.query.cText);
         const userId = req.session.userId;
         const nickname = req.session.nickname;
         //댓글 삽입
@@ -310,8 +311,8 @@ app.post('/editPost/:bId', async (req, res) => {
         return;
     }
     const bId = req.params.bId;
-    const title = req.body.title;
-    const text = req.body.text;
+    const title = util.escapeHtml(req.body.title);
+    const text = util.escapeHtml(req.body.text);
     const userId = req.session.userId;
     const rows = await DB.select(`select userId from post where bId=${bId};`);
     if (rows[0].userId !== userId) {
@@ -383,9 +384,10 @@ app.get('/editMyInfo', async (req, res) => {
         res.send(`error: no login`);
         return;
     }
-    const nickname = req.query.nickname;
+    const nickname = util.escapeHtml(req.query.nickname);
     const charImg = req.query.charImg;
     req.session.charImg = charImg;
+    req.session.nickname = nickname;
     //중복된 nickname이 있다면 charImg만 바꾼다.
     rows = await DB.select(`select count(*) from account where nickname='${nickname}'`);
     if (rows[0]['count(*)'] !== 0) {
@@ -400,7 +402,7 @@ app.get('/editMyInfo', async (req, res) => {
 
 // 새 채팅방 만들기
 app.post('/makeNewChatRoom', (req, res) => {
-    const chatRoomName = req.body.chatRoomName;
+    const chatRoomName = util.escapeHtml(req.body.chatRoomName);
     const key = room.makeNewChatRoom(chatRoomName);
     res.send(key);
 })
@@ -408,7 +410,7 @@ app.post('/makeNewChatRoom', (req, res) => {
 // 새 크아방 만들기
 // room에 maxPopulation=2로 추가 설정.
 app.post('/makeNewChatCARoom', (req, res) => {
-    const chatCARoomName = req.body.chatCARoomName;
+    const chatCARoomName = util.escapeHtml(req.body.chatCARoomName);
     const key = room.makeNewCAChatRoom(chatCARoomName);
     res.send(key);
 })
