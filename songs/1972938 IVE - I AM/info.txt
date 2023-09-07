@@ -1,0 +1,4 @@
+{
+	"bg":"bg.jpg",
+	"youtubeId":"6ZUIwj3FgUY"
+}

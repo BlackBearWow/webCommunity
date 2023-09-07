@@ -1,4 +1,5 @@
 //index.js
+const fs = require('node:fs');
 const express = require('express');
 const app = express();
 const http = require('http');
@@ -18,6 +19,7 @@ app.set('view engine', 'ejs');
 // Function to serve static files
 app.use('/images', express.static('images'));
 app.use('/sound', express.static('sound'));
+app.use('/songs', express.static('songs'));
 app.use('/js', express.static('static/js'));
 
 //room은 새로운 파일로 만들어 따로 관리하자.
@@ -49,6 +51,43 @@ app.get('/chatAndCrazyArcade', async (req, res) => {
         res.send(`<script>alert('로그인 후 이용해주세요');location.href="/";</script>`);
     }
 })
+
+//리듬게임 리스트
+app.get('/rhythmGameList', (req, res) => {
+    //디렉토리를 읽은 후 리듬게임 리스트를 전송함.
+    let songList = fs.readdirSync('./songs');
+    //디렉토리만 필터
+    songList = songList.filter((val) => fs.statSync(`./songs/${val}`).isDirectory());
+    songList.forEach((val, index) => {
+        songList[index] = { name: songList[index], bg: undefined };
+        if (fs.existsSync(`./songs/${val}/info.txt`)) {
+            let info = fs.readFileSync(`./songs/${val}/info.txt`, { encoding: 'utf8' });
+            songList[index].bg = JSON.parse(info).bg;
+        }
+    })
+    res.render('rhythmGameList', { songList, navText: logInOutStr.navStr(req.session.userId ? true : false) });
+})
+
+// 리듬게임 곡을 클릭했을 때 플레이가능한 비트맵들을 보여줌
+app.get('/getSongListDataByName/:name', (req, res) => {
+    const name = req.params.name;
+    const songListData = fs.readdirSync(`./songs/${name}`);
+    res.send(songListData.filter((val) => val.endsWith('.osu')));
+});
+
+// 리듬게임-인게임
+app.get('/playRhythmGame/:songName/:fileName', (req, res) => {
+    res.render('playRhythmGame');
+});
+
+// 리듬게임-인게임에서 비트맵 정보들 반환
+app.get('/getFileData/:songName/:fileName', (req, res) => {
+    const songName = req.params.songName;
+    const fileName = req.params.fileName;
+    const data = fs.readFileSync(`./songs/${songName}/${fileName}`, { encoding: 'utf8' });
+    const youtubeId = JSON.parse(fs.readFileSync(`./songs/${songName}/info.txt`, { encoding: 'utf8' })).youtubeId;
+    res.send({data, youtubeId});
+});
 
 // 로그아웃 버튼을 누를 시
 app.get('/logout', (req, res) => {

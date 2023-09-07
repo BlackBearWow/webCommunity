@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+
+<head>
+    <title>리듬게임 - 인게임</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<link rel="shortcut icon" href="https://blackbearwow.github.io/favicon/favicon.ico">
+    <script>
+        //url
+        let songName, fileName;
+        let can;        //canvas 객체
+        let ctx;        //context객체를 얻어야 drawimage와 filltext를 할 수 있음
+        let mainInterval;   //interval변수
+        let keyBoard = {
+            'a': { pressing: false, press: false }, 's': { pressing: false, press: false },
+            'd': { pressing: false, press: false }, 'f': { pressing: false, press: false },
+            ' ': { pressing: false, press: false },
+            'j': { pressing: false, press: false }, 'k': { pressing: false, press: false },
+            'l': { pressing: false, press: false }, ';': { pressing: false, press: false },
+        };
+        //osu file format분석에 필요한 변수들
+        //object와 배열로 만들 것이다.
+        let General;
+        let Editor;
+        let Metadata;
+        let Difficulty;
+        let Events;
+        let TimingPoints;
+        let Colours;
+        let HitObjects;
+        //게임에서 사용하는 변수
+        let height = 400;
+        let width = 400;
+        const oneWidth = 90;
+        let bgm;
+        let keySize = 4;
+        const indexToAlphabetArray = [
+            ['d', 'f', 'j', 'k'],
+            ['d', 'f', ' ', 'j', 'k'],
+            ['s', 'd', 'f', 'j', 'k', 'l'],
+            ['s', 'd', 'f', ' ', 'j', 'k', 'l'],
+            ['a', 's', 'd', 'f', 'j', 'k', 'l', ';']
+        ];
+        let hitSound, missSound;
+        //시간
+        let startTime, currentTime, flowTime;
+        //draw에 필요한 변수들
+        const keyHeight = 100;
+        const keyGapPixel = 2;
+        const dfjkGap = { x: 30, y: 75 };
+        let timePixelConst = 1.2;
+        const timeCutLine = 100;
+        // 점수 콤보
+        let score = 0;
+        let combo = 0;
+        let comboFontSize = 60;
+        let hitStatus = ''; //miss hit
+        let hitFontSize = 60;
+        // hit이펙트
+        let hitRadius; //배열로 
+        // 2. This code loads the IFrame Player API code asynchronously.
+        let tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        let firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        let player;
+        let youtubeVideoId;
+        async function onYouTubeIframeAPIReady() {
+            await waitForDocumentReady();
+            if (youtubeVideoId != "") {
+                player = new YT.Player('youtubePlayer', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: youtubeVideoId,
+                    //ArmDp-zijuc
+                    //F-bXO4irRWc 변태왕자
+                    playerVars: {
+                        'playsinline': 1,
+                        'controls': 0,
+                        'rel': 0
+                    },
+                    events: {
+                        'onReady': onPlayerReady
+                    }
+                })
+            }
+            else {
+                onPlayerReady();
+            }
+        }
+        function waitForDocumentReady() {
+            return new Promise((resolve) => {
+                $(document).ready(() => {
+                    can = document.getElementById("can");
+                    ctx = can.getContext("2d");
+                    getFileData();
+                    $("#can").keydown(function (e) {
+                        if (e.key == 'a' | e.key == 's' | e.key == 'd' | e.key == 'f' | e.key == ' ' | e.key == 'j' | e.key == 'k' | e.key == 'l' | e.key == ';') {
+                            //처음 눌렀을때만 press가 true가 된다.
+                            if (keyBoard[e.key]['pressing'] == false)
+                                keyBoard[e.key]['press'] = true;
+                            else
+                                keyBoard[e.key]['press'] = false;
+                            keyBoard[e.key]['pressing'] = true;
+                        }
+                    });
+                    $("#can").keyup(function (e) {
+                        if (e.key == 'a' | e.key == 's' | e.key == 'd' | e.key == 'f' | e.key == ' ' | e.key == 'j' | e.key == 'k' | e.key == 'l' | e.key == ';') {
+                            keyBoard[e.key]['press'] = false;
+                            keyBoard[e.key]['pressing'] = false;
+                        }
+                    });
+                    resolve();
+                })
+            })
+        }
+        function onPlayerReady() {
+            $("#can").keydown(function (e) {
+                if (e.key == "Enter") {
+                    if (!mainInterval) {
+                        startTime = new Date().getTime();
+                        startTime += parseInt(General['AudioLeadIn']);
+                        setTimeout(() => {
+                            if (youtubeVideoId) {
+                                player.playVideo();
+                                player.mute();
+                            }
+                            bgm.play();
+                            bgm.onended = function () {
+                                alertAndHistoryBack('노래가 끝났습니다');
+                            }
+                        }, parseInt(General['AudioLeadIn']));
+                        //General['AudioLeadIn']은 전체적인 시작 자체를 늦추는 것이다. 오디오만의 싱크를 위한 것이 아님.
+                        mainInterval = setInterval(oneFrame, 10);
+                    }
+                }
+            })
+        }
+
+        function alertAndHistoryBack(msg) {
+            alert(msg);
+            history.go(-1);
+        }
+        function getFileData() {
+            songName = window.location.pathname.split('/')[2];
+            fileName = window.location.pathname.split('/')[3];
+            $.ajax({
+                url: `/getFileData/${songName}/${fileName}`,
+                type: "get",
+                async: false,
+                success: function ({ data, youtubeId }) {
+                    youtubeVideoId = youtubeId;
+                    console.log(`id: ${youtubeId}`);
+                    analyseFileData(data);
+                    initialize();
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        }
+        function analyseFileData(data) {
+            General = data.match(/(?<=\[General\])([\s\S]*?)(?=\[Editor\]|\[Metadata\]|\[Difficulty\]|\[Events\]|\[TimingPoints\]|\[Colours\]|\[HitObjects\])/);
+            analyseGeneral();
+            Editor = data.match(/(?<=\[Editor\])([\s\S]*?)(?=\[Metadata\]|\[Difficulty\]|\[Events\]|\[TimingPoints\]|\[Colours\]|\[HitObjects\])/);
+            analyseEditor();
+            Metadata = data.match(/(?<=\[Metadata\])([\s\S]*?)(?=\[Difficulty\]|\[Events\]|\[TimingPoints\]|\[Colours\]|\[HitObjects\])/);
+            analyseMetadata();
+            Difficulty = data.match(/(?<=\[Difficulty\])([\s\S]*?)(?=\[Events\]|\[TimingPoints\]|\[Colours\]|\[HitObjects\])/);
+            analyseDifficulty();
+            Events = data.match(/(?<=\[Events\])([\s\S]*?)(?=\[TimingPoints\]|\[Colours\]|\[HitObjects\])/);
+            analyseEvents();
+            TimingPoints = data.match(/(?<=\[TimingPoints\])([\s\S]*?)(?=\[Colours\]|\[HitObjects\])/);
+            analyseTimingPoints();
+            Colours = data.match(/(?<=\[Colours\])([\s\S]*?)(?=\[HitObjects\])/);
+            analyseColours();
+            HitObjects = data.match(/(?<=\[HitObjects\])([\s\S]*)/);
+            analyseHitObjects();
+        }
+        function analyseGeneral() {
+            if (General) {
+                General = General[0].trim();
+                let temp = {};
+                General.split('\n').forEach((val, index) => {
+                    temp[val.split(':')[0].trim()] = val.split(':')[1].trim();
+                })
+                General = temp;
+                bgm = new Audio(`/songs/${songName}/${General.AudioFilename}`);
+            }
+            if (General.Mode != 3) {
+                alertAndHistoryBack('매니아 모드 맵이 아닙니다.');
+            }
+        }
+        function analyseEditor() {
+            if (Editor) {
+                Editor = Editor[0].trim();
+                let temp = {};
+                Editor.split('\n').forEach((val, index) => {
+                    temp[val.split(':')[0].trim()] = val.split(':')[1].trim();
+                })
+                Editor = temp;
+            }
+        }
+        function analyseMetadata() {
+            if (Metadata) {
+                Metadata = Metadata[0].trim();
+                let temp = {};
+                Metadata.split('\n').forEach((val, index) => {
+                    temp[val.split(':')[0].trim()] = val.split(':')[1].trim();
+                })
+                Metadata = temp;
+            }
+        }
+        function analyseDifficulty() {
+            if (Difficulty) {
+                Difficulty = Difficulty[0].trim();
+                let temp = {};
+                Difficulty.split('\n').forEach((val, index) => {
+                    temp[val.split(':')[0].trim()] = val.split(':')[1].trim();
+                })
+                Difficulty = temp;
+                //CircleSize:4는 4key를 의미한다.
+                keySize = Difficulty.CircleSize;
+                if(!((keySize == 4)||(keySize == 5)||(keySize == 6)||(keySize == 7)||(keySize == 8))) {
+                    alertAndHistoryBack('4 5 6 7 8키만 지원합니다');
+                }
+                hitRadius = new Array(parseInt(keySize)).fill(0);
+                width = keySize * oneWidth;
+                can.width = width;
+                $('#gameScoreDiv').css('left', 200 + width);
+            }
+            else {
+                alertAndHistoryBack('difficulty가 없습니다');
+            }
+        }
+        function analyseEvents() {
+            if (Events) {
+                Events = Events[0].trim();
+                let temp = {};
+                Events.match(/\/\/[^\/]+/g).forEach((val, index) => {
+                    if (val.split('\r\n')[2])
+                        temp[val.split('\r\n')[0].replaceAll('/', '')] = [val.split('\r\n')[1], val.split('\r\n')[2]];
+                    else
+                        temp[val.split('\r\n')[0].replaceAll('/', '')] = val.split('\r\n')[1];
+                })
+                Events = temp;
+                setBackGround();
+            }
+        }
+        function analyseTimingPoints() {
+            if (TimingPoints) {
+                TimingPoints = TimingPoints[0].trim();
+            }
+        }
+        function analyseColours() {
+            if (Colours) {
+                Colours = Colours[0].trim();
+            }
+        }
+        function analyseHitObjects() {
+            if (HitObjects) {
+                HitObjects = HitObjects[0].trim();
+                let temp = {};
+                HitObjects.split('\n').forEach((val, index) => {
+                    if (!temp[val.split(',')[0]])
+                        temp[val.split(',')[0]] = [];
+                    if (/[0-9]+:[0-9]+:[0-9]+:[0-9]+:[0-9]+:/.test(val.split(',')[5])) {
+                        //hold 타입
+                        temp[val.split(',')[0]].push([val.split(',')[2], val.split(',')[5].match(/[^:]+/)[0]]);
+                    }
+                    else {
+                        //normal 타입
+                        temp[val.split(',')[0]].push([val.split(',')[2], 0]);
+                    }
+                })
+                //4key일 경우 64 192 320 448
+                if (keySize == 4) {
+                    if (Object.keys(temp).length != 4) alertAndHistoryBack('4key이지만 HitObjects는 4가지가 아닙니다');
+                    Object.keys(temp).forEach((val, index) => {
+                        temp[index] = temp[val];
+                        delete temp[val];
+                    })
+                }
+                else if (keySize == 5) {
+                    if (Object.keys(temp).length != 5) alertAndHistoryBack('5key이지만 HitObjects는 5가지가 아닙니다');
+                    Object.keys(temp).forEach((val, index) => {
+                        temp[index] = temp[val];
+                        delete temp[val];
+                    })
+                }
+                else if (keySize == 6) {
+                    if (Object.keys(temp).length != 6) alertAndHistoryBack('6key이지만 HitObjects는 6가지가 아닙니다');
+                    Object.keys(temp).forEach((val, index) => {
+                        temp[index] = temp[val];
+                        delete temp[val];
+                    })
+                }
+                else if (keySize == 7) {
+                    if (Object.keys(temp).length != 7) alertAndHistoryBack('7key이지만 HitObjects는 7가지가 아닙니다');
+                    Object.keys(temp).forEach((val, index) => {
+                        temp[index] = temp[val];
+                        delete temp[val];
+                    })
+                }
+                else if (keySize == 8) {
+                    if (Object.keys(temp).length != 8) alertAndHistoryBack('8key이지만 HitObjects는 8가지가 아닙니다');
+                    Object.keys(temp).forEach((val, index) => {
+                        temp[index] = temp[val];
+                        delete temp[val];
+                    })
+                }
+
+                HitObjects = temp;
+                console.log(HitObjects);
+            }
+            else {
+                alertAndHistoryBack('hitObject가 없습니다.');
+            }
+        }
+        function setBackGround() {
+            //Background and Video events가 배열이라면 배경과 영상이 배열에 담겨있고, 배열이 아니라면 배경이다.
+            if (typeof (Events['Background and Video events']) == "string") {
+                $('#mainDiv').append(`<img src="/songs/${songName}/${Events['Background and Video events'].match(/(?<=")[^"]+/)[0]}" style="width: 100%;position: absolute;object-fit: cover;z-index:-1">`)
+            }
+            //info.txt를 만들며 해당 코드는 사용하지 않는다.
+            else {
+                if (youtubeVideoId == "") {
+                    if (Events['Background and Video events'][0].startsWith("0,")) {
+                        //0번째 index가 배경이미지일경우
+                        $('#mainDiv').append(`<img src="/songs/${songName}/${Events['Background and Video events'][0].match(/(?<=")[^"]+/)[0]}" style="width: 100%;position: absolute;object-fit: cover;z-index:-1">`)
+                    }
+                    else {
+                        //1번째 index가 배경이미지일경우
+                        $('#mainDiv').append(`<img src="/songs/${songName}/${Events['Background and Video events'][1].match(/(?<=")[^"]+/)[0]}" style="width: 100%;position: absolute;object-fit: cover;z-index:-1">`)
+                    }
+                }
+            }
+        }
+
+        function initialize() {
+            hitSound = new Audio('/hitNormal/soft-hitnormal8.wav');
+            missSound = new Audio('/hitNormal/miss.mp3');
+            height = can.clientHeight;
+            can.height = height;
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = "white";
+            ctx.font = "70px Comic Arial";
+            ctx.fillText("click and", 40, 300);
+            ctx.fillText("press Enter", 40, 400);
+        }
+        function oneFrame() {
+            logic();
+            draw();
+        }
+        function logic() {
+            currentTime = new Date().getTime();
+            flowTime = currentTime - startTime;
+            hitLogic();
+            missLogic();
+            fontSizeCalculate();
+        }
+        function hitLogic() {
+            //keydown으로는 initialDelay가 있어 직접 press를 설정해야 한다. press가 true라면 false로 바꾸자.
+            const indexToAlphabet = indexToAlphabetArray[keySize - 4];
+            for (let i = 0; i < keySize; i++) {
+                const alpha = indexToAlphabet[i];
+                if (HitObjects[i].length != 0) {
+                    if (HitObjects[i][0][1] == 0) { //단일 노트라면
+                        if (keyBoard[alpha]['press']) {
+                            const timeGap = parseInt(HitObjects[i][0][0]) - flowTime;
+                            if (timeGap <= timeCutLine) {
+                                if (Math.abs(timeGap) <= (timeCutLine / 3)) hitMiss(300);
+                                else if (Math.abs(timeGap) <= (timeCutLine * 2 / 3)) hitMiss(200);
+                                else hitMiss(100);
+                                HitObjects[i].shift();
+                                hitSound.currentTime = 0; hitSound.play();
+                                hitRadius[i] = 20;
+                            }
+                            keyBoard[alpha]['press'] = false;
+                        }
+                    }
+                    else {  //hold 노트라면
+                        if (keyBoard[alpha]['press']) {
+                            const timeGap = parseInt(HitObjects[i][0][0]) - flowTime;
+                            if (timeGap <= timeCutLine) {
+                                if (Math.abs(timeGap) <= (timeCutLine / 3)) hitMiss(300);
+                                else if (Math.abs(timeGap) <= (timeCutLine * 2 / 3)) hitMiss(200);
+                                else hitMiss(100);
+                                hitSound.currentTime = 0; hitSound.play();
+                                hitRadius[i] = 20;
+                            }
+                            keyBoard[alpha]['press'] = false;
+                        }
+                        else if (keyBoard[alpha]['pressing']) {
+                            const timeGap1 = parseInt(HitObjects[i][0][0]) - flowTime;
+                            const timeGap2 = flowTime - parseInt(HitObjects[i][0][1]);
+                            if ((timeGap1 <= timeCutLine) && (timeGap2 <= timeCutLine)) {
+                                hitMiss(300);
+                                hitRadius[i] = 20;
+                            }
+                        }
+                        else {
+                            if (Math.abs(flowTime - parseInt(HitObjects[i][0][1])) <= timeCutLine) {
+                                HitObjects[i].shift();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        function missLogic() {
+            const indexToAlphabet = indexToAlphabetArray[keySize - 4];
+            for (let i = 0; i < keySize; i++) {
+                const alpha = indexToAlphabet[i];
+                if (HitObjects[i].length != 0) {
+                    if (HitObjects[i][0][1] == 0) { //단일 노트라면
+                        const timeGap = parseInt(HitObjects[i][0][0]) - flowTime;
+                        if (timeGap <= -timeCutLine) {
+                            HitObjects[i].shift();
+                            hitMiss('miss');
+                        }
+                    }
+                    else {  //hold 노트라면
+                        const timeGap = parseInt(HitObjects[i][0][0]) - flowTime;
+                        const timeGap2 = parseInt(HitObjects[i][0][1]) - flowTime;
+                        //처음 누를 때가 지나갔는데 키를 누르고있지 않다면
+                        if ((timeGap <= -timeCutLine) && !keyBoard[alpha]['pressing']) {
+                            HitObjects[i].shift();
+                            hitMiss('miss');
+                        }
+                        //마지막 뗄 떼가 지나가면
+                        else if (timeGap2 <= -timeCutLine) {
+                            HitObjects[i].shift();
+                            hitMiss('miss');
+                        }
+                    }
+                }
+            }
+            //d
+            // if (HitObjects['d'].length != 0) {
+            //     if (HitObjects['d'][0][1] == 0) { //단일 노트라면
+            //         const timeGap = parseInt(HitObjects['d'][0][0]) - flowTime;
+            //         if (timeGap <= -timeCutLine) {
+            //             HitObjects['d'].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            //     else {  //hold 노트라면
+            //         const timeGap = parseInt(HitObjects['d'][0][0]) - flowTime;
+            //         const timeGap2 = parseInt(HitObjects['d'][0][1]) - flowTime;
+            //         //처음 누를 때가 지나갔는데 키를 누르고있지 않다면
+            //         if ((timeGap <= -timeCutLine) && !keyBoard['d']['pressing']) {
+            //             HitObjects['d'].shift();
+            //             hitMiss('miss');
+            //         }
+            //         //마지막 뗄 떼가 지나가면
+            //         else if (timeGap2 <= -timeCutLine) {
+            //             HitObjects['d'].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            // }
+            // //f
+            // if (HitObjects[192].length != 0) {
+            //     if (HitObjects[192][0][1] == 0) { //단일 노트라면
+            //         const timeGap = parseInt(HitObjects[192][0][0]) - flowTime;
+            //         if (timeGap <= -timeCutLine) {
+            //             HitObjects[192].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            //     else {  //hold 노트라면
+            //         const timeGap = parseInt(HitObjects[192][0][0]) - flowTime;
+            //         const timeGap2 = parseInt(HitObjects[192][0][1]) - flowTime;
+            //         //처음 누를 때가 지나갔는데 키를 누르고있지 않다면
+            //         if ((timeGap <= -timeCutLine) && !keyBoard['f']['pressing']) {
+            //             HitObjects[192].shift();
+            //             hitMiss('miss');
+            //         }
+            //         //마지막 뗄 떼가 지나가면
+            //         if (timeGap2 <= -timeCutLine) {
+            //             HitObjects[192].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            // }
+            // //j
+            // if (HitObjects[320].length != 0) {
+            //     if (HitObjects[320][0][1] == 0) { //단일 노트라면
+            //         const timeGap = parseInt(HitObjects[320][0][0]) - flowTime;
+            //         if (timeGap <= -timeCutLine) {
+            //             HitObjects[320].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            //     else {  //hold 노트라면
+            //         const timeGap = parseInt(HitObjects[320][0][0]) - flowTime;
+            //         const timeGap2 = parseInt(HitObjects[320][0][1]) - flowTime;
+            //         //처음 누를 때가 지나갔는데 키를 누르고있지 않다면
+            //         if ((timeGap <= -timeCutLine) && !keyBoard['j']['pressing']) {
+            //             HitObjects[320].shift();
+            //             hitMiss('miss');
+            //         }
+            //         //마지막 뗄 떼가 지나가면
+            //         if (timeGap2 <= -timeCutLine) {
+            //             HitObjects[320].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            // }
+            // //k
+            // if (HitObjects[448].length != 0) {
+            //     if (HitObjects[448][0][1] == 0) { //단일 노트라면
+            //         const timeGap = parseInt(HitObjects[448][0][0]) - flowTime;
+            //         if (timeGap <= -timeCutLine) {
+            //             HitObjects[448].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            //     else {  //hold 노트라면
+            //         const timeGap = parseInt(HitObjects[448][0][0]) - flowTime;
+            //         const timeGap2 = parseInt(HitObjects[448][0][1]) - flowTime;
+            //         //처음 누를 때가 지나갔는데 키를 누르고있지 않다면
+            //         if ((timeGap <= -timeCutLine) && !keyBoard['k']['pressing']) {
+            //             HitObjects[448].shift();
+            //             hitMiss('miss');
+            //         }
+            //         //마지막 뗄 떼가 지나가면
+            //         if (timeGap2 <= -timeCutLine) {
+            //             HitObjects[448].shift();
+            //             hitMiss('miss');
+            //         }
+            //     }
+            // }
+        }
+        function hitMiss(what) {
+            comboFontSize = 60; hitFontSize = 60;
+            if (what == 'miss') {
+                missSound.currentTime = 0;
+                missSound.play();
+                combo = 0; hitStatus = "miss";
+            }
+            else if (typeof what == 'number') {
+                //300 200 100점이 있다.
+                combo++; hitStatus = what;
+                score += combo * what;
+                $('#gameScore').text(`score:${score}`);
+            }
+        }
+        function fontSizeCalculate() {
+            if (comboFontSize > 50)
+                comboFontSize--;
+            if (hitFontSize > 50)
+                hitFontSize--;
+            for (let i = 0; i < hitRadius.length; i++) {
+                if (hitRadius[i] != 0) hitRadius[i]--;
+            }
+        }
+        function draw() {
+            height = can.clientHeight;
+            can.height = height;
+            drawBackGround();
+            drawNotes();
+            drawComboAndHitStatus();
+        }
+        function drawBackGround() {
+            //검정 배경
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, width, height);
+            //키 보이기
+            const indexToAlphabet = indexToAlphabetArray[keySize - 4];
+            for (let i = 0; i < keySize; i++) {
+                if (keyBoard[indexToAlphabet[i]]['pressing']) ctx.fillStyle = "#FF00FF";
+                else ctx.fillStyle = "#9400D3";
+                ctx.fillRect(keyGapPixel + oneWidth * i, height - keyHeight, oneWidth - keyGapPixel, keyHeight);
+            }
+            //줄 보이기
+            ctx.fillStyle = "#696969";
+            ctx.fillRect(0, 0, keyGapPixel, height);
+            for (let i = 1; i <= keySize; i++) {
+                ctx.fillRect(oneWidth * i - keyGapPixel, 0, keyGapPixel * 2, height);
+            }
+            //dfjk보이기
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.font = "60px Comic Arial";
+            for (let i = 0; i < keySize; i++) {
+                ctx.fillText(indexToAlphabet[i], keyGapPixel + dfjkGap.x + oneWidth * i, height - keyHeight + dfjkGap.y);
+            }
+            //키 바로 위 줄 보이기
+            ctx.fillStyle = "#D3D3D3";
+            ctx.fillRect(0, height - keyHeight - 10, width, 10);
+        }
+        function drawNotes() {
+            //노트들의 시간은 어떻게 할까?
+            //노트의 시간과 현재 시간이 1초 사이라면 보여줘보자.
+            ctx.fillStyle = "#AFEEEE";
+            for (let k = 0; k < keySize; k++) {
+                for (let i = 0; i < HitObjects[k].length; i++) {
+                    if (HitObjects[k][i][1] == 0) { //단일 노트라면
+                        const timeGap = parseInt(HitObjects[k][i][0]) - flowTime;
+                        if (timeGap >= 1000) break;
+                        ctx.fillRect(oneWidth * k, height - keyHeight - timeGap * timePixelConst, oneWidth, 10);
+                    }
+                    else {  //hold 노트라면
+                        //현재 지난 시간과 hold노트의 시작시간의 차이다. 1초 이상 차이난다면 break;
+                        if ((parseInt(HitObjects[k][i][0]) - flowTime) >= 1000) break;
+                        //tineGap2는 hold노트의 끝나는시간과 현재 지난 시간의 차이다. fillRect의 출발 지점을 알아내기 위해 필요
+                        const timeGap2 = parseInt(HitObjects[k][i][1]) - flowTime;
+                        //noteHeight는 hold노트의 길이이다.
+                        const noteHeight = (HitObjects[k][i][1] - HitObjects[k][i][0]) * timePixelConst;
+                        ctx.fillRect(oneWidth * k, height - keyHeight - timeGap2 * timePixelConst, oneWidth, noteHeight + 10);
+                    }
+                }
+            }
+        }
+        function drawComboAndHitStatus() {
+            ctx.fillStyle = "white";
+            ctx.font = `${comboFontSize}px Comic Arial`;
+            ctx.fillText(combo, width / 2 - 20, height - keyHeight - 500);
+            ctx.font = `${hitFontSize}px Comic Arial`;
+            if (hitStatus == 'miss') ctx.fillStyle = "red";
+            else if (hitStatus == 300) ctx.fillStyle = "#8888ff";
+            else if (hitStatus == 200) ctx.fillStyle = "#6666ff";
+            else if (hitStatus == 100) ctx.fillStyle = "#4444ff";
+            ctx.fillText(hitStatus, width / 2 - 20, height - keyHeight - 300);
+            //이펙트 그리기
+            for (let i = 0; i < keySize; i++) {
+                if (hitRadius[i] != 0) {
+                    ctx.beginPath();
+                    ctx.arc(oneWidth * (i+0.5) , height - keyHeight - 5, hitRadius[i] + 10, 0, 2 * Math.PI);
+                    ctx.fillStyle = `rgb(${100+Math.floor(Math.random()*156)},${100+Math.floor(Math.random()*156)},${100+Math.floor(Math.random()*156)})`;
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(oneWidth * (i+0.5) , height - keyHeight - 5, hitRadius[i], 0, 2 * Math.PI);
+                    ctx.fillStyle = "orange";
+                    ctx.fill();
+                }
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="mainDiv" class="position-relative overflow-hidden" style="height:100vh">
+        <div id="youtubePlayer"></div>
+        <div class="position-absolute" style="top:0px;left:200px;height:100%;">
+            <canvas class="border" id="can" style="height:100%;" width="400px" tabindex='1'></canvas>
+        </div>
+        <div class="position-absolute" style="top:0px;left:600px;height:100%;" id="gameScoreDiv">
+            <a id="gameScore" style="color:white;background-color:black;font-size: 40px;">score:0</a>
+        </div>
+    </div>
+</body>
+
+</html>

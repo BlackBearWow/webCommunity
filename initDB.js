@@ -56,10 +56,10 @@ createDatabase();
 //해당 오류는 connection.connect와 connection.end를 프로그램 시작과 마지막으로 옮겨서 해결했다.
 
 insertAccountData([`admin`, `${hash.sha256('1234')}`, `관리자`, 'bazzi', 20, 30, 4.0, 5, 5, 5000]);
-insertAccountData([`guest`, `${hash.sha256('guest')}`, `guest`, 'bazzi', 20, 1, 2.0, 3, 3, 5000]);
-insertAccountData([`sce6544`, `${hash.sha256('as86cew5x1')}`, `차돌짬뽕`, 'bazzi', 10, 1, 2.0, 3, 3, 5000]);
-insertAccountData([`se654c`, `${hash.sha256('3ew515s48c')}`, `김치찌개`, 'bazzi', 10, 1, 2.0, 3, 3, 5000]);
-insertAccountData([`asdf`, `${hash.sha256('asdf')}`, `김치찌개`, 'bazzi', 10, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`guest`, `${hash.sha256('guest')}`, `guest`, 'bazzi', 3, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`sce6544`, `${hash.sha256('as86cew5x1')}`, `차돌짬뽕`, 'mario', 8, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`se654c`, `${hash.sha256('3ew515s48c')}`, `김치찌개`, 'mario', 5, 1, 2.0, 3, 3, 5000]);
+insertAccountData([`asdf`, `${hash.sha256('asdf')}`, `김치찌개`, 'pikachu', 10, 1, 2.0, 3, 3, 5000]);
 
 // 현재 한국 시간 가져오기
 const now = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
