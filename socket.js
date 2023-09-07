@@ -23,6 +23,7 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
                         socket.emit("disconnect");
                     }
                     socket.nickname = session.nickname;
+                    socket.charImg = session.charImg;
                     //초대메시지를 받기 위해 자신의 닉네임 room에 join한다.
                     socket.join(socket.nickname);
                     socket.emit('yourNickname', socket.nickname);
@@ -79,10 +80,9 @@ module.exports = (server, session_store, room = new roomModule.Room) => {
             //아니라면
             else {
                 socket.join(key);
-                room.addCAChatPopulationInfo(key, socket.nickname);
+                room.addCAChatPopulationInfo(key, socket.nickname, socket.charImg);
                 socket.emit('CAChatRoomJoinSucess', key, name);
                 io.to('index').emit('response CAChatRoomList', room.getCAChatRoomList());
-                //io.to(key).emit('CAChat message', `${socket.nickname}이/가 채팅방에 참여했습니다.`);
                 io.to(key).emit('CARoomInfo', room.getCARoomInfo(key));
             }
         });

@@ -1,34 +1,84 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
+
 <head>
 	<title>mixedGame</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+		crossorigin="anonymous"></script>
+	<script>
+		let charImg = 'bazzi';
+		$(document).ready(() => {
+			$('#btnInfoEdit').click(() => {
+				for (let i = 0; i < $('input[name=charImg]').length; i++) {
+					if ($('input[name=charImg]')[i].checked) { charImg = $('input[name=charImg]')[i].value; }
+				}
+				console.log(charImg);
+				//ajax로 서버에 보내자. 닉네임이랑 캐릭터 이미지 변경 가능으로.
+				$.ajax({
+					url: "/editMyInfo",
+					data: {
+						nickname: $('#nickname').val(),
+						charImg
+					},
+					success: function (result) {
+						alert(result);
+						location.href = "/myInfo";
+					},
+					error: function (error) {
+						console.log(error);
+						alert(JSON.stringify(error));
+					}
+				});
+			})
+		})
+	</script>
 
-	<link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	
 </head>
+
 <body>
 	<div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
-        <a class="my-0 mr-md-auto font-weight-normal text-dark" href="/">Home</a>
-        <nav class="my-2 my-md-0 mr-md-3">
-            <%- navText %>
-        </nav>
-    </div>
+		<a class="my-0 mr-md-auto font-weight-normal text-dark" href="/">Home</a>
+		<nav class="my-2 my-md-0 mr-md-3">
+			<%- navText %>
+		</nav>
+	</div>
 	<div class="container-fluid p-3 my-3 border">
 		<h4>내정보</h4>
-		<p>아이디: <%=userId%></p>
+		<p>아이디: <%=userId%>
+		</p>
 		<a>
-			닉네임: <%= nickname %> <br>level: <%=level%> <br>exp: <%=exp%>
-			<br>스피드: <%=speed%> <br>물풍선개수: <%=wbLimitQuantity%> 
-			<br>물줄기: <%=wbLen%> <br>돈: <%=money%>
+			level: <%=level%> <br>exp: <%=exp%>
+					<br>스피드: <%=speed%> <br>물풍선개수: <%=wbLimitQuantity%>
+							<br>물줄기: <%=wbLen%> <br>돈: <%=money%> <br>
+									닉네임: <input type="text" class="form-control" id="nickname" name="nickname"
+										maxlength="20" value="<%= nickname %>">
 		</a>
-		<br><img src="/images/bazzi/배찌31.png" alt='배찌'>
+		<br>
+		캐릭터 이미지:
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="charImg" value="bazzi" id="flexRadioDefault1"
+				<%if(charImg=='bazzi' ){%> checked <%}%>>
+				<img src="/images/character/bazzi/bazziDown1.png" alt='배찌'>
+		</div>
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="charImg" value="mario" id="flexRadioDefault2"
+				<%if(charImg=='mario' ){%> checked <%}%>>
+				<img src="/images/character/mario/marioDown1.png" alt='마리오'>
+		</div>
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="charImg" value="pikachu" id="flexRadioDefault3"
+				<%if(charImg=='pikachu' ){%> checked <%}%>>
+				<img src="/images/character/pikachu/pikachuDown1.png" alt='피카츄'>
+		</div>
+		<input type="button" class="btn btn-success" value="정보 수정" id="btnInfoEdit">
 	</div>
-    </body>
+</body>
+
 </html>

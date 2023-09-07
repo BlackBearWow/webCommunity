@@ -49,8 +49,8 @@ async function deleteSql(sql) {
 }
 
 async function insertNewId(id, passwd, nickname) {
-    const [rows, feilds] = await pool.promise().execute(`insert into account(userId, passwd, nickname) values(?, ?, ?);`,
-    [id, hash.sha256(passwd), nickname]);
+    const [rows, feilds] = await pool.promise().execute(`insert into account(userId, passwd, nickname, charImg) values(?, ?, ?, ?);`,
+    [id, hash.sha256(passwd), nickname, 'bazzi']);
 }
 
 module.exports = {select, insert, insertPost, insertComment, update, updatePost, deleteSql, insertNewId};

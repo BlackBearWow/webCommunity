@@ -43,9 +43,9 @@ class Room {
     addChatPopulation(key) {
         this.chatRoomData[key].population++;
     }
-    addCAChatPopulationInfo(key, nickname) {
+    addCAChatPopulationInfo(key, nickname, charImg) {
         this.chatCARoomData[key].population++;
-        this.chatCARoomData[key].info[nickname] = { ready: false, keyboard: false };
+        this.chatCARoomData[key].info[nickname] = { ready: false, keyboard: false, charImg };
     }
     subChatPopulation(key) {
         if (!this.chatRoomData[key]) return false;

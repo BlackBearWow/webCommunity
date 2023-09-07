@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+
+<head>
+    <title>mixedGame</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+        crossorigin="anonymous"></script>
+
+    <link href='https://fonts.googleapis.com/css?family=Aldrich' rel='stylesheet'>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+
+<body>
+    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
+        <a class="my-0 mr-md-auto font-weight-normal text-dark" href="/">Home</a>
+        <nav class="my-2 my-md-0 mr-md-3">
+            <%- navText %>
+        </nav>
+    </div>
+    <div class="container-fluid p-3 my-3 border row">
+        <h2>Welcome!</h2>
+        <h4>web game community에 오신걸 환영합니다</h4>
+        <div class="col-6 border">
+            <h5>공지</h5>
+            <hr>
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <th scope="col">제목</th>
+                    <th scope="col">댓글수</th>
+                    <th scope="col">닉네임</th>
+                </thead>
+                <tbody id="posts">
+                    <% for (const row of rows) { %>
+                        <tr onclick="location.href='viewPost/<%=row.bId%>'">
+                            <td><%=row.title%></td>
+                            <td><%=row.commentNum%></td>
+                            <td scope="row"><%=row.nickname%></td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-6 border">
+            <h5>리듬게임</h5>
+            <hr>
+            <img src="/images/메이플아케이드.png" alt='이미지' width="100%">
+        </div>
+        <div class="col-6 border">
+            <h5>메이플아케이드 게임</h5>
+            <hr>
+            <img src="/images/메이플아케이드.png" alt='이미지' width="100%">
+        </div>
+        <div class="col-6 border">
+            <h5>채팅/크아</h5>
+            <hr>
+            <img src="/images/크아.png" alt='이미지' width="100%">
+        </div>
+    </div>
+</body>
+
+</html>

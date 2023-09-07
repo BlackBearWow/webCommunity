@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="shortcut icon" href="https://blackbearwow.github.io/favicon/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript">
+        let can;        //canvas 객체
+        let ctx;        //context객체를 얻어야 drawimage와 filltext를 할 수 있음
+        let mainInterval;   //interval변수
+        let backgroundImage; //배경 이미지 저장변수
+        let backgroundx = 0, backgroundy = 0;    //배경 x y좌표 좌표.
+        let keyBoard = {};//키보드를 입력했는지 아닌지 확인하는 맵
+        let leftKeyDown, rightKeyDown, upKeyDown, downKeyDown; //상하좌우 어떤 키를 입력했는지 확인하는 변수
+        let mouseX, mouseY; //현재 마우스 x, y좌표 
+        let mouseImage; //마우스 이미지
+        let char; //메인 캐릭터
+        let obstacle;  //깰 수 있는 장애물 정보 저장 변수
+        let waterballoon;   //물풍선 정보 저장 변수
+        let item;   //아이템 정보 저장 변수
+        let monster;    //몬스터 정보 저장 변수
+        let music;      //음악 저장 변수
+        let lantern; //이 맵은 어두운 분위기로 랜턴 사용
+        let wallList = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        ];
+
+        class mainCharacter {
+            constructor(level, exp) {
+                this.level = level; this.exp = exp; this.maxExp = 2;
+                this.speed = 2; this.maxSpeed = 4;
+                this.maxHp = 100; this.currentHp = this.maxHp; this.sight = 3; //좌:0 상:1 우:2 하:3
+                this.x = 400; this.y = 400; //캐릭터의 x, y좌표
+                this.showX = 40; this.showY = 40; //화면 표현상 x좌표, y좌표
+                this.leftSet = 0; this.rightSet = 0; this.upSet = 0; this.downSet = 0; //상하좌우 뭐가 세팅되었는지. 한번 세팅되면 한칸을 움직이기 전까지 다른 방향으로 바꿀 수 없다. 
+                this.leftmoveSum = 0; this.rightmoveSum = 0; this.upmoveSum = 0; this.downmoveSum = 0; //상하좌우를 움직이며 한칸을 넘기면 움직임을 멈춤.
+                this.walking = 0;   //몇번째 이미지를 보여줄지 정하는 변수
+                this.statusShow = 0; //상태창을 보일지 말지. 최대물풍선개수, 물줄기 길이, 속도, 돈
+                this.attackMin = 1; this.attackMax = 2;   //물풍선 공격의 최소 최대 공격력
+                this.wbMaxLimitQuantity = 20;  //물풍선을 먹었을떄, 몇개까지 늘어날 수 있는지 한도.
+                this.wbLimitQuantity = 1;  //물풍선을 놓을수 있는 한도
+                this.wbNum = 0;   //현재 물풍선 개수.
+                this.wbMaxLen = 30, this.wbLen = 1; //물줄기 최대길이, 길이
+                this.levelImageCount = 0;   //레벨업 이미지
+                this.waterballoonHitDamage = [];    //물풍선에게 맞은 데미지
+                this.waterballoonAttackDelay = 0;   //프레임미다 물풍선을 맞지 않음. 10프레임마다 물풍선을 맞는다.
+                this.monsterHitDamage = [];    //몬스터에게 맞은 데미지
+                this.monsterAttackDelay = 0;   //프레임미다 몬스터에게 맞지 않음. 10프레임마다 물풍선을 맞는다.
+                this.charImg = 'bazzi';
+                this.bazziImgList = [
+                    [new makeImage("/images/character/bazzi/bazziLeft1.png"),
+                    new makeImage("/images/character/bazzi/bazziLeft2.png"),
+                    new makeImage("/images/character/bazzi/bazziLeft3.png"),
+                    new makeImage("/images/character/bazzi/bazziLeft4.png"),
+                    new makeImage("/images/character/bazzi/bazziLeft5.png"),
+                    new makeImage("/images/character/bazzi/bazziLeft6.png"),
+                    ],
+                    [new makeImage("/images/character/bazzi/bazziUp1.png"),
+                    new makeImage("/images/character/bazzi/bazziUp2.png"),
+                    new makeImage("/images/character/bazzi/bazziUp3.png"),
+                    new makeImage("/images/character/bazzi/bazziUp4.png"),
+                    new makeImage("/images/character/bazzi/bazziUp5.png"),
+                    new makeImage("/images/character/bazzi/bazziUp6.png"),
+                    ],
+                    [new makeImage("/images/character/bazzi/bazziRight1.png"),
+                    new makeImage("/images/character/bazzi/bazziRight2.png"),
+                    new makeImage("/images/character/bazzi/bazziRight3.png"),
+                    new makeImage("/images/character/bazzi/bazziRight4.png"),
+                    new makeImage("/images/character/bazzi/bazziRight5.png"),
+                    new makeImage("/images/character/bazzi/bazziRight6.png"),
+                    ],
+                    [new makeImage("/images/character/bazzi/bazziDown1.png"),
+                    new makeImage("/images/character/bazzi/bazziDown2.png"),
+                    new makeImage("/images/character/bazzi/bazziDown3.png"),
+                    new makeImage("/images/character/bazzi/bazziDown4.png"),
+                    new makeImage("/images/character/bazzi/bazziDown5.png"),
+                    new makeImage("/images/character/bazzi/bazziDown6.png"),
+                    ]
+                ];
+                this.marioImgList = [
+                    [new makeImage("/images/character/mario/marioLeft1.png"),
+                    new makeImage("/images/character/mario/marioLeft2.png"),
+                    new makeImage("/images/character/mario/marioLeft3.png")
+                    ],
+                    [new makeImage("/images/character/mario/marioUp1.png"),
+                    new makeImage("/images/character/mario/marioUp2.png"),
+                    new makeImage("/images/character/mario/marioUp3.png")
+                    ],
+                    [new makeImage("/images/character/mario/marioRight1.png"),
+                    new makeImage("/images/character/mario/marioRight2.png"),
+                    new makeImage("/images/character/mario/marioRight3.png")
+                    ],
+                    [new makeImage("/images/character/mario/marioDown1.png"),
+                    new makeImage("/images/character/mario/marioDown2.png"),
+                    new makeImage("/images/character/mario/marioDown3.png")
+                    ]
+                ];
+                this.pikachuImgList = [
+                    [new makeImage("/images/character/pikachu/pikachuLeft1.png"),
+                    new makeImage("/images/character/pikachu/pikachuLeft2.png"),
+                    new makeImage("/images/character/pikachu/pikachuLeft3.png"),
+                    new makeImage("/images/character/pikachu/pikachuLeft4.png")
+                    ],
+                    [new makeImage("/images/character/pikachu/pikachuUp1.png"),
+                    new makeImage("/images/character/pikachu/pikachuUp2.png"),
+                    new makeImage("/images/character/pikachu/pikachuUp3.png"),
+                    new makeImage("/images/character/pikachu/pikachuUp4.png")
+                    ],
+                    [new makeImage("/images/character/pikachu/pikachuRight1.png"),
+                    new makeImage("/images/character/pikachu/pikachuRight2.png"),
+                    new makeImage("/images/character/pikachu/pikachuRight3.png"),
+                    new makeImage("/images/character/pikachu/pikachuRight4.png")
+                    ],
+                    [new makeImage("/images/character/pikachu/pikachuDown1.png"),
+                    new makeImage("/images/character/pikachu/pikachuDown2.png"),
+                    new makeImage("/images/character/pikachu/pikachuDown3.png"),
+                    new makeImage("/images/character/pikachu/pikachuDown4.png")
+                    ]
+                ];
+                this.levelupImage = [
+                    new makeImage("/images/levelup/levelUp00.png"), new makeImage("/images/levelup/levelUp01.png"),
+                    new makeImage("/images/levelup/levelUp02.png"), new makeImage("/images/levelup/levelUp03.png"),
+                    new makeImage("/images/levelup/levelUp04.png"), new makeImage("/images/levelup/levelUp05.png"),
+                    new makeImage("/images/levelup/levelUp06.png"), new makeImage("/images/levelup/levelUp07.png"),
+                    new makeImage("/images/levelup/levelUp08.png"), new makeImage("/images/levelup/levelUp09.png"),
+                    new makeImage("/images/levelup/levelUp10.png"), new makeImage("/images/levelup/levelUp11.png"),
+                    new makeImage("/images/levelup/levelUp12.png"), new makeImage("/images/levelup/levelUp13.png"),
+                    new makeImage("/images/levelup/levelUp14.png"), new makeImage("/images/levelup/levelUp15.png"),
+                    new makeImage("/images/levelup/levelUp16.png"), new makeImage("/images/levelup/levelUp17.png"),
+                    new makeImage("/images/levelup/levelUp18.png"), new makeImage("/images/levelup/levelUp19.png"),
+                    new makeImage("/images/levelup/levelUp20.png"),
+                ];
+            }
+            levelupCharacter(exp, level) {
+                this.maxHp = level * 100; this.level = level; this.exp = exp; this.maxExp = level * level;
+                this.currentHp = this.maxHp; this.attackMax = level * 2; this.attackMin = level;
+            }
+            setCharacter(nickname, level, exp, speed, wbLimitQuantity, wbLen, money, charImg) {
+                this.nickname = nickname; this.levelupCharacter(exp, level);
+                this.speed = speed; this.wbLimitQuantity = wbLimitQuantity; this.wbLen = wbLen; this.money = money;
+                this.charImg = charImg;
+            }
+            drawMainCharacter() {
+                ctx.drawImage(this[`${this.charImg}ImgList`][this.sight][Math.floor(this.walking)].img, this.showX, this.showY, 40, 40);
+                ctx.font = "15px Arial";
+                //ctx.lineWidth = 0;
+                ctx.fillStyle = "black";
+                ctx.shadowBlur = 0;
+                ctx.fillText(this.nickname, this.showX, this.showY);
+            }
+            drawLevelUp() {
+                if (this.levelImageCount) {
+                    this.levelImageCount--;
+                    ctx.drawImage(this.levelupImage[20 - Math.floor(this.levelImageCount / 5)].img, this.showX - 180, this.showY - 220, 400, 400);
+                }
+            }
+            drawWaterballoonHitDamage() {
+                ctx.font = "30px Arial";
+                ctx.lineWidth = 3;
+                for (let i = 0; i < this.waterballoonHitDamage.length; i++) {
+                    ctx.shadowColor = "black";
+                    ctx.shadowBlur = 3;
+                    ctx.strokeText(this.waterballoonHitDamage[i][2], backgroundx + this.waterballoonHitDamage[i][0], backgroundy + this.waterballoonHitDamage[i][1] - this.waterballoonHitDamage[i][3]);
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "aqua";
+                    ctx.fillText(this.waterballoonHitDamage[i][2], backgroundx + this.waterballoonHitDamage[i][0], backgroundy + this.waterballoonHitDamage[i][1] - this.waterballoonHitDamage[i][3]);
+                }
+            }
+            drawMonsterHitDamage() {
+                ctx.font = "30px Arial";
+                ctx.lineWidth = 3;
+                for (let i = 0; i < this.monsterHitDamage.length; i++) {
+                    ctx.shadowColor = "black";
+                    ctx.shadowBlur = 3;
+                    ctx.strokeText(this.monsterHitDamage[i][2], backgroundx + this.monsterHitDamage[i][0], backgroundy + this.monsterHitDamage[i][1] - this.monsterHitDamage[i][3]);
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "blueViolet";
+                    ctx.fillText(this.monsterHitDamage[i][2], backgroundx + this.monsterHitDamage[i][0], backgroundy + this.monsterHitDamage[i][1] - this.monsterHitDamage[i][3]);
+                }
+            }
+        }
+
+        class obstacleInfo {
+            constructor(source) {
+                this.popImgList = [
+                    new makeImage("/images/obstacle/크아박스1.png"),
+                    new makeImage("/images/obstacle/크아박스2.png"),
+                ];
+                this.img = new Image();
+                this.img.src = source;
+                this.list = new Array(40);
+                for (let y = 0; y < 40; y++)
+                    this.list[y] = new Array(40);
+                // 40x40 장애물 배열 생성
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        this.list[y][x] =
+                        {
+                            info: 0,    //0빈공간 1장애물
+                            pop: 0,    //터지는중이면 1 아니면 0
+                            poptime: 0,    //터지는 시간. 50프레임
+                        };
+                    }
+                }
+            }
+            makeObstacleList() {
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        if (Math.floor(Math.random() * 10) < 1) {
+                            //고정 장애물이 없고, 캐릭터 주변이 아니면 장애물 생기기
+                            if ((wallList[y][x] == 0) && !((char.x >= x * 40 - 40) && (char.x <= x * 40 + 40) && (char.y >= y * 40 - 40) && (char.y <= y * 40 + 40)))
+                                this.list[y][x].info = 1;
+                        }
+                    }
+                }
+            }
+            drawObstacles() {
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        if (this.list[y][x].info) {
+                            if (this.list[y][x].pop == false)
+                                ctx.drawImage(this.img, backgroundx + x * 40, backgroundy + y * 40, 40, 40);
+                            else
+                                ctx.drawImage(this.popImgList[this.list[y][x].poptime % 2].img, backgroundx + x * 40, backgroundy + y * 40, 40, 40);
+                        }
+                    }
+                }
+            }
+        }
+
+        class waterBalloonInfo {
+            constructor() {
+                this.imgList = [
+                    new makeImage("/images/waterBalloon/waterBalloon0.png"),
+                    new makeImage("/images/waterBalloon/waterBalloon1.png"),
+                    new makeImage("/images/waterBalloon/waterBalloon2.png"),
+                    new makeImage("/images/waterBalloon/waterBalloon3.png"),
+                    new makeImage("/images/waterBalloon/waterBalloon4.png"),
+                    new makeImage("/images/waterBalloon/waterBalloon5.png"),
+                    new makeImage("/images/waterBalloon/waterBalloon6.png"),
+                    new makeImage("/images/waterBalloon/waterBalloon7.png"),
+                ];
+                this.boomImgList = [
+                    [new makeImage("/images/waterBalloon/left펑1.png"), new makeImage("/images/waterBalloon/left펑2.png")],
+                    [new makeImage("/images/waterBalloon/up펑1.png"), new makeImage("/images/waterBalloon/up펑2.png")],
+                    [new makeImage("/images/waterBalloon/right펑1.png"), new makeImage("/images/waterBalloon/right펑2.png")],
+                    [new makeImage("/images/waterBalloon/down펑1.png"), new makeImage("/images/waterBalloon/down펑2.png")],
+                    [new makeImage("/images/waterBalloon/mid펑1.png"), new makeImage("/images/waterBalloon/mid펑2.png")],
+                ];
+                this.list = new Array(40);
+                for (let y = 0; y < 40; y++)
+                    this.list[y] = new Array(40);
+                // 40x40 물풍선 배열 생성
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        this.list[y][x] =
+                        {
+                            what: 0,    //0빈공간 10물풍선 11왼쪽물줄기 12위물줄기 13오른쪽물줄기 14아래물줄기
+                            waitTime: 0,    //물풍선인 시간. 100프레임
+                            pop: false,     //터지는중인지 아닌지.
+                            boomTime: 0,    //터지는 시간. 50프레임
+                        };
+                    }
+                }
+            }
+            drawWaterBalloon() {
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        if (this.list[y][x].what == 10)
+                            ctx.drawImage(this.imgList[this.list[y][x].waitTime % 8].img, backgroundx + x * 40 - 27, backgroundy + y * 40 - 36, 90, 90);
+                        else if (this.list[y][x].what > 10)
+                            ctx.drawImage(this.boomImgList[this.list[y][x].what - 11][this.list[y][x].boomTime % 2].img, backgroundx + x * 40, backgroundy + y * 40, 40, 40);
+                    }
+                }
+            }
+        }
+
+        class itemInfo {
+            constructor() {
+                this.imgList = [
+                    [new makeImage("/images/item/speed1.png"),
+                    new makeImage("/images/item/speed2.png"),
+                    ],
+                    [new makeImage("/images/item/waterLength1.png"),
+                    new makeImage("/images/item/waterLength2.png"),
+                    ],
+                    [new makeImage("/images/item/waterBalloon1.png"),
+                    new makeImage("/images/item/waterBalloon2.png"),
+                    ]
+                ];
+                this.list = new Array(40);
+                for (let y = 0; y < 40; y++)
+                    this.list[y] = new Array(40);
+                // 40x40 아이템 배열 생성
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        this.list[y][x] =
+                        {
+                            info: 0,    //0빈공간 1스피드 2물줄기 3물풍선
+                            time: 0,    //지난시간. 반짝거리는아이템을 구현하기 위한 변수
+                        };
+                    }
+                }
+            }
+            drawItem() {
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        if (this.list[y][x].info)
+                            ctx.drawImage(this.imgList[this.list[y][x].info - 1][this.list[y][x].time % 2].img, backgroundx + x * 40, backgroundy + y * 40, 40, 40);
+                    }
+                }
+            }
+        }
+
+        class monsterInfo {
+            constructor() {
+                this.hitDamage = [];    //몬스터가 맞은 데미지를 저장하는 변수. x, y, damage, count가 저장된다.
+                this.imgList = [
+                    new makeImage("/images/monster/ghostA/ghostA0.png"),
+                    new makeImage("/images/monster/ghostA/ghostA1.png")
+                ];
+                this.list = [];
+                for (let y = 0; y < 40; y++) {
+                    for (let x = 0; x < 40; x++) {
+                        let probability = Math.floor(Math.random() * 100);
+                        if (probability < 2) {
+                            if (wallList[y][x] != 0) continue;  //해당 블럭이 벽이면 몬스터를 만들지 않음.
+                            else if (obstacle.list[y][x].info == 1) continue;   //해당 블럭이 장애물이면 몬스터를 만들지 않음.
+                            //해당 블럭이 포탈일 경우 몬스터를 만들지 않음
+                            else if ((char.x >= x * 40 - 40) && (char.x <= x * 40 + 40) && (char.y >= y * 40 - 40) && (char.y <= y * 40 + 40)) continue; //캐릭터에게 너무 가까이있으면 몬스터를 만들지 않음.
+                            if (probability < 10)
+                                this.list[this.list.length] = {
+                                    name: "ghostA",
+                                    maxHp: 10000,
+                                    hp: 10000,
+                                    exp: 1000,
+                                    money: 10000,  //몬스터를 잡았을 때 얼마를 주는지
+                                    x: x * 40,
+                                    y: y * 40,
+                                    attack: 100,  //몬스터가 캐릭터를 공격할 때 최소 데미지
+                                    attackRand: 300,      //몬스터가 캐릭터를 공격할 때 최도 데미지 + 알파값
+                                    movingWait: 10 + Math.floor(Math.random() * 10),  //움직이기 대기 시간
+                                    moveXspeed: 0,  //x좌표 스피드
+                                    moveYspeed: 0,  //y좌표 스피드
+                                    moveCount: 0,   //40번 움직임
+                                };
+                        }
+                    }
+                }
+            }
+            drawMonster() {
+                for (let i = 0; i < this.list.length; i++) {
+                    //몬스터 hp 그리기
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(backgroundx + (this.list[i].x) - 7, backgroundy + (this.list[i].y) - 10, 40 + 7, 10);
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(backgroundx + (this.list[i].x) - 5, backgroundy + (this.list[i].y) - 8, (this.list[i].hp / this.list[i].maxHp) * (40 + 3), 6);
+                    //몬스터 본체 그리기
+                    ctx.drawImage(this.imgList[this.list[i].moveCount % this.imgList.length].img, backgroundx + this.list[i].x, backgroundy + this.list[i].y, 40, 40);
+                }
+            }
+            drawHitDamage() {
+                ctx.font = "30px Arial";
+                ctx.lineWidth = 3;
+                for (let i = 0; i < this.hitDamage.length; i++) {
+                    ctx.shadowColor = "black";
+                    ctx.shadowBlur = 3;
+                    ctx.strokeText(this.hitDamage[i][2], backgroundx + this.hitDamage[i][0], backgroundy + this.hitDamage[i][1] - this.hitDamage[i][3]);
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "yellow";
+                    ctx.fillText(this.hitDamage[i][2], backgroundx + this.hitDamage[i][0], backgroundy + this.hitDamage[i][1] - this.hitDamage[i][3]);
+                }
+            }
+        }
+
+        class musicInfo {
+            constructor() {
+                this.backgroundMusic = new Audio("/sound/oneMissedCall.mp3");
+                this.waterballoonSound = new Audio("/sound/물풍선.wav");
+                this.waterballoonBoomSound = new Audio("/sound/물풍선펑.wav");
+                this.itemSound = new Audio("/sound/아이템.wav");
+                this.levelUpSound = new Audio("/sound/렙업.wav");
+                this.monsterDeathSound = new Audio("/sound/goombaDeath.mp3");
+            }
+            changeVolume(value) {
+                this.backgroundMusic.volume = value * 0.01;
+                this.waterballoonSound.volume = value * 0.01;
+                this.waterballoonBoomSound.volume = value * 0.01;
+                this.itemSound.volume = value * 0.01;
+            }
+            playWaterballoonSound() {
+                this.waterballoonSound.currentTime = 0;
+                this.waterballoonSound.play();
+            }
+            playWaterballoonBoomSound() {
+                this.waterballoonBoomSound.currentTime = 0;
+                this.waterballoonBoomSound.play();
+            }
+            playWateritemSound() {
+                this.itemSound.currentTime = 0;
+                this.itemSound.play();
+            }
+            playLevelUpSound() {
+                this.levelUpSound.currentTime = 0;
+                this.levelUpSound.play();
+            }
+            playMonsterDeathSound() {
+                this.monsterDeathSound.currentTime = 0;
+                this.monsterDeathSound.play();
+            }
+        }
+
+        function makeImage(source) {
+            this.img = new Image();
+            this.img.src = source;
+        }
+
+        function getCharacterInfo() //캐릭터의 정보를 얻어서 세팅함
+        {
+            $.ajax({
+                url: "/getCharacterInfo",
+                success: function (data) {
+                    if (data != 'noLogin') {
+                        //로그인상태라면
+                        char.setCharacter(data.nickname, data.level, data.exp, data.speed, data.wbLimitQuantity, data.wbLen, data.money, data.charImg);
+                        setTimeout(saveCharacterInfo, 10000)
+                    }
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        function saveCharacterInfo() //캐릭터의 정보를 서버로 저장
+        {
+            $.ajax({
+                url: "/saveCharacterInfo",
+                data: {
+                    level: char.level,
+                    exp: char.exp,
+                    speed: char.speed,
+                    wbLimitQuantity: char.wbLimitQuantity,
+                    wbLen: char.wbLen,
+                    money: char.money
+                },
+                success: function (data) {
+                    if (data != 'noLogin') {
+                        //30초마다 저장
+                        setTimeout(saveCharacterInfo, 30000);
+                    }
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        function gotoMapList() {
+            saveCharacterInfo();
+            location.href = '/GameMapList';
+        }
+
+        $(document).ready(function () {
+            initialize();
+        });
+
+        function initialize() {
+            can = document.getElementById("can");
+            ctx = can.getContext("2d");
+
+            ctx.fillStyle = 'yellow'; ctx.font = "50px Arial";
+            ctx.fillText('Loading...', 200, 200);
+
+            backgroundImage = new Image();
+            backgroundImage.src = "/images/backgroundImage/남쪽사냥터.png";
+
+            char = new mainCharacter(1, 1);
+            obstacle = new obstacleInfo("/images/obstacle/tong.png");
+
+            obstacle.makeObstacleList();
+
+            waterballoon = new waterBalloonInfo();
+
+            item = new itemInfo();
+
+            monster = new monsterInfo();
+
+            music = new musicInfo();
+
+            mouseImage = new Image();
+            mouseImage.src = ("https://blackbearwow.github.io/image/cursor.png");
+
+            lantern = new Image();
+            lantern.src = ("/images/lantern.png");
+
+            getCharacterInfo();
+
+            backgroundImage.onload = function () {
+                start();
+            }
+        }
+
+        function start() {
+            mainInterval = setInterval(update, 20);
+            window.addEventListener('keydown', function (e) { keyBoard[e.keyCode] = true; })
+            window.addEventListener('keyup', function (e) { keyBoard[e.keyCode] = false; })
+            document.getElementById("can").addEventListener('mousemove', function (e) { mouseX = e.offsetX; mouseY = e.offsetY; })
+        }
+
+        function update() {
+            logic();
+            draw();
+        }
+
+        function logic() {
+            playBackgroundMusic();      //배경음악 재생
+            setBackgroundCoordinate();  //배경과 캐릭터의 좌표 설정
+            setKeyState();  //어떤 키를 눌렀는지 확인
+            mainCharMove(); //메인캐릭터 움직임
+            waterBalloonSet();  //물풍선 설정
+            waterballoonTimeCount();    //물풍선 시간흐르기, 터뜨리기
+            obstaclePop();  //장애물 터뜨리기
+            itemTimeflow(); //아이템 시간 흐르기
+            getItem(); //아이템을 먹는다면?
+            monsterMove();  //몬스터 움직이기
+            waterballoonHitMonster();   //물풍선이 몬스터를 공격한다면
+            monsterHitDamageCount();    //몬스터 히트데미지 텍스트 점점 위로 올라가기
+            monsterDie();   //hp가 0 이하인 몬스터는 죽음
+            waterballoonHitCharacter(); //물풍선이 캐릭터를 때림
+            waterballoonHitCharacterDamageCount();      //물풍선이 캐릭터를 때린 텍스트 점점 위로 올라가기
+            monsterHitCharacter();  //몬스터가 캐릭터를 때림
+            monsterHitCharacterDamageCount();   //몬스터가 캐릭터를 때린 텍스트 점점 위로 올라가기
+        }
+
+        function playBackgroundMusic() {
+            music.backgroundMusic.play();
+            music.backgroundMusic.loop = true;
+        }
+
+        function setBackgroundCoordinate() {
+            if (char.x <= 600 - 20) { backgroundx = 0; char.showX = char.x; }
+            else if (char.x > 600 - 20 && char.x <= 1600 - (600 + 20)) { backgroundx = -char.x + 600 - 20; char.showX = 600 - 20; }
+            else if (char.x > 1600 - (600 + 20)) { backgroundx = -1600 + 1200; char.showX = char.x - 1600 + 1200; }
+            if (char.y <= 400 - 20) { backgroundy = 0; char.showY = char.y; }
+            else if (char.y > 400 - 20 && char.y <= 1600 - (400 + 20)) { backgroundy = -char.y + 400 - 20; char.showY = 400 - 20; }
+            else if (char.y > 1600 - (400 + 20)) { backgroundy = -1600 + 800; char.showY = char.y - 1600 + 800; }
+        }
+
+        function setKeyState() {
+            leftKeyDown = keyBoard[37]; rightKeyDown = keyBoard[39];
+            upKeyDown = keyBoard[38]; downKeyDown = keyBoard[40];
+        }
+
+        function mainCharMove() {
+            if ((char.x % 40 == 0) && (char.y % 40) == 0) {   //한칸을 움직이고나서 딱 정가운데 있을 때 움직일 수 있음. 한칸을 모두 움직이기 전에는 방향을 바꾸지 못함.
+                if ((char.sight == 1) || (char.sight == 3)) {   //상 하 방향을 보고있을 때
+                    if (leftKeyDown) { char.sight = 0; if ((charBlock(0, -1) == 0) && (obstacle.list[char.y / 40][char.x / 40 - 1].info == 0)) ifLeftKeyDown(); }
+                    else if (rightKeyDown) { char.sight = 2; if ((charBlock(0, +1) == 0) && (obstacle.list[char.y / 40][char.x / 40 + 1].info == 0)) ifRightKeyDown(); }
+                    else if (upKeyDown) { char.sight = 1; if ((charBlock(-1, 0) == 0) && (obstacle.list[char.y / 40 - 1][char.x / 40].info == 0)) ifUpKeyDown(); }
+                    else if (downKeyDown) { char.sight = 3; if ((charBlock(+1, 0) == 0) && (obstacle.list[char.y / 40 + 1][char.x / 40].info == 0)) ifDownKeyDown(); }
+                }
+                else if ((char.sight == 0) || (char.sight == 2)) {  //좌 우 방향을 보고있을 때
+                    if (upKeyDown) { char.sight = 1; if ((charBlock(-1, 0) == 0) && (obstacle.list[char.y / 40 - 1][char.x / 40].info == 0)) ifUpKeyDown(); }
+                    else if (downKeyDown) { char.sight = 3; if ((charBlock(+1, 0) == 0) && (obstacle.list[char.y / 40 + 1][char.x / 40].info == 0)) ifDownKeyDown(); }
+                    else if (leftKeyDown) { char.sight = 0; if ((charBlock(0, -1) == 0) && (obstacle.list[char.y / 40][char.x / 40 - 1].info == 0)) ifLeftKeyDown(); }
+                    else if (rightKeyDown) { char.sight = 2; if ((charBlock(0, +1) == 0) && (obstacle.list[char.y / 40][char.x / 40 + 1].info == 0)) ifRightKeyDown(); }
+                }
+            }
+            //상하좌우 움직이기
+            const imgCount = char[`${char.charImg}ImgList`][0].length;
+            if (char.leftSet) {
+                char.x -= char.speed; //해당방향으로 속도만큼 움직인다.
+                char.leftmoveSum += char.speed;   //움직인만큼 총합에 더한다. 총합이 한칸을 넘어서는지 판단하기 위해.
+                char.walking += 0.6; if (char.walking >= imgCount) char.walking = 0; //부동소수점방식이라서 char.walking+=0.5로 지정했다가는 딱 3으로 되지 않아서 오류가 걸린다. >=로 하면 해결.
+                if (char.leftmoveSum >= 40) { char.x = Math.round(char.x / 40) * 40; char.leftmoveSum = 0; char.leftSet = 0; char.walking = 0; }  //총합이 40이되면 멈춘다.
+            }
+            else if (char.rightSet) {
+                char.x += char.speed;
+                char.rightmoveSum += char.speed;
+                char.walking += 0.6; if (char.walking >= imgCount) char.walking = 0;
+                if (char.rightmoveSum >= 40) { char.x = Math.round(char.x / 40) * 40; char.rightmoveSum = 0; char.rightSet = 0; char.walking = 0; }
+            }
+            if (char.upSet) {
+                char.y -= char.speed;
+                char.upmoveSum += char.speed;
+                char.walking += 0.6; if (char.walking >= imgCount) char.walking = 0;
+                if (char.upmoveSum >= 40) { char.y = Math.round(char.y / 40) * 40; char.upmoveSum = 0; char.upSet = 0; char.walking = 0; }
+            }
+            else if (char.downSet) {
+                char.y += char.speed;
+                char.downmoveSum += char.speed;
+                char.walking += 0.6; if (char.walking >= imgCount) char.walking = 0;
+                if (char.downmoveSum >= 40) { char.y = Math.round(char.y / 40) * 40; char.downmoveSum = 0; char.downSet = 0; char.walking = 0; }
+            }
+        }
+
+        function charBlock(Y, X, k, m) { return wallList[char.y / 40 + Y][char.x / 40 + X]; }
+
+        function ifLeftKeyDown() {
+            char.sight = 0;
+            if (char.leftSet == 0) { char.leftSet = 1; }
+        }
+        function ifRightKeyDown() {
+            char.sight = 2;
+            if (char.rightSet == 0) { char.rightSet = 1; }
+        }
+        function ifUpKeyDown() {
+            char.sight = 1;
+            if (char.upSet == 0) { char.upSet = 1; }
+        }
+        function ifDownKeyDown() {
+            char.sight = 3;
+            if (char.downSet == 0) { char.downSet = 1; }
+        }
+
+        function waterBalloonSet() {
+            if (keyBoard[32]) {
+                let x = Math.round(char.x / 40);
+                let y = Math.round(char.y / 40);
+                if ((wallList[y][x] == 0) && (obstacle.list[y][x].info == 0) && (waterballoon.list[y][x].what == 0)) {
+                    if (char.wbNum >= char.wbLimitQuantity)
+                        return;
+                    waterballoon.list[y][x].what = 10;
+                    waterballoon.list[y][x].waitTime = 0;
+                    char.wbNum += 1;
+                    music.playWaterballoonSound();
+                }
+            }
+        }
+
+        function waterballoonTimeCount() {
+            for (let y = 0; y < 40; y++) {
+                for (let x = 0; x < 40; x++) {
+                    if (waterballoon.list[y][x].what == 10)  //물풍선상태라면
+                    {
+                        waterballoon.list[y][x].waitTime += 1;
+                        if (waterballoon.list[y][x].waitTime > 100)    //시간이 다되면 풍선이 터짐.
+                            waterBalloonPop(x, y);
+                    }
+                    else if (waterballoon.list[y][x].what > 10)    //물줄기상태라면
+                    {
+                        waterballoon.list[y][x].boomTime += 1;
+                        if (waterballoon.list[y][x].boomTime > 50)
+                            waterballoon.list[y][x].what = 0;
+                    }
+                }
+            }
+        }
+
+        function waterBalloonPop(x, y) {
+            music.playWaterballoonBoomSound();
+            waterballoon.list[y][x].boomTime = 0;
+            waterballoon.list[y][x].what = 15;    //물줄기상태이다.
+            char.wbNum -= 1;
+            for (let i = 1; i <= char.wbLen; i++)   //왼쪽
+            {
+                if (((x - i) < 0) || (wallList[y][x - i] == 1)) //맵 밖으로 나가거나 벽 만나면 반복문 종료
+                    break;
+                else if (obstacle.list[y][x - i].info == 1)  //장애물 만나면 블록 터뜨리기
+                {
+                    obstacle.list[y][x - i].pop = 1;
+                    obstacle.list[y][x - i].poptime = 0;
+                    break;
+                }
+                else if (waterballoon.list[y][x - i].what == 10) //안터진 물풍선 만나면 터뜨려버려!
+                    waterBalloonPop(x - i, y)
+                else {
+                    waterballoon.list[y][x - i].what = 11;
+                    waterballoon.list[y][x - i].boomTime = 0;
+                    item.list[y][x - i].info = 0;
+                }
+            }
+            for (let i = 1; i <= char.wbLen; i++)   //오른쪽
+            {
+                if (((x + i) >= 40) || (wallList[y][x + i] == 1)) //맵 밖으로 나가거나 벽 만나면 반복문 종료
+                    break;
+                else if (obstacle.list[y][x + i].info == 1) {    //장애물 만나면 블록 터뜨리기
+                    obstacle.list[y][x + i].pop = 1;
+                    obstacle.list[y][x + i].poptime = 0;
+                    break;
+                }
+                else if (waterballoon.list[y][x + i].what == 10)
+                    waterBalloonPop(x + i, y)
+                else {
+                    waterballoon.list[y][x + i].what = 13;
+                    waterballoon.list[y][x + i].boomTime = 0;
+                    item.list[y][x + i].info = 0;
+                }
+            }
+            for (let i = 1; i <= char.wbLen; i++)   //위쪽
+            {
+                if (((y - i) < 0) || (wallList[y - i][x] == 1)) //맵 밖으로 나가거나 벽 만나면 반복문 종료
+                    break;
+                else if (obstacle.list[y - i][x].info == 1) {    //장애물 만나면 블록 터뜨리기
+                    obstacle.list[y - i][x].pop = 1;
+                    obstacle.list[y - i][x].poptime = 0;
+                    break;
+                }
+                else if (waterballoon.list[y - i][x].what == 10)
+                    waterBalloonPop(x, y - i)
+                else {
+                    waterballoon.list[y - i][x].what = 12;
+                    waterballoon.list[y - i][x].boomTime = 0;
+                    item.list[y - i][x].info = 0;
+                }
+            }
+            for (let i = 1; i <= char.wbLen; i++)   //아래쪽
+            {
+                if (((y + i) >= 40) || (wallList[y + i][x] == 1)) //맵 밖으로 나가거나 벽 만나면 반복문 종료
+                    break;
+                else if (obstacle.list[y + i][x].info == 1) {    //장애물 만나면 블록 터뜨리기
+                    obstacle.list[y + i][x].pop = 1;
+                    obstacle.list[y + i][x].poptime = 0;
+                    break;
+                }
+                else if (waterballoon.list[y + i][x].what == 10)
+                    waterBalloonPop(x, y + i)
+                else {
+                    waterballoon.list[y + i][x].what = 14;
+                    waterballoon.list[y + i][x].boomTime = 0;
+                    item.list[y + i][x].info = 0;
+                }
+            }
+        }
+
+        function obstaclePop() {
+            for (let y = 0; y < 40; y++) {
+                for (let x = 0; x < 40; x++) {
+                    if (obstacle.list[y][x].pop == 1) {
+                        obstacle.list[y][x].poptime += 1;
+                        if (50 < obstacle.list[y][x].poptime) {
+                            obstacle.list[y][x].info = 0;
+                            obstacle.list[y][x].pop = 0;
+
+                            let probability = Math.random() * 30;
+                            if (probability < 10) {
+                                if (probability < 5)
+                                    item.list[y][x].info = 1;
+                                else if (probability < 8)
+                                    item.list[y][x].info = 2;
+                                else if (probability < 10)
+                                    item.list[y][x].info = 3;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function itemTimeflow() {
+            for (let y = 0; y < 40; y++) {
+                for (let x = 0; x < 40; x++) {
+                    if (item.list[y][x].info != 0)
+                        item.list[y][x].time += 1;
+                }
+            }
+        }
+
+        function getItem()  //아이템을 먹는다면?
+        {
+            if ((char.x % 40 == 0) && (char.y % 40 == 0)) //한가운데 있어야 아이템을 먹을 수 있음
+            {
+                if (item.list[char.y / 40][char.x / 40].info != 0) {
+                    if (item.list[char.y / 40][char.x / 40].info == 1) { //롤러브레이드를 먹었다면 스피드 증가
+                        item.list[char.y / 40][char.x / 40].info = 0;
+                        char.speed += 0.1;
+                        if (char.maxSpeed < char.speed) char.speed = char.maxSpeed;
+                        music.playWateritemSound();
+                    }
+                    else if (item.list[char.y / 40][char.x / 40].info == 2) { //물줄기를 먹었다면 물줄기 길이 증가
+                        item.list[char.y / 40][char.x / 40].info = 0;
+                        if (char.wbLen < char.wbMaxLen) char.wbLen += 1;
+                        music.playWateritemSound();
+                    }
+                    else if (item.list[char.y / 40][char.x / 40].info == 3) { //물풍선을 먹었다면 물풍선 가능개수 증가
+                        item.list[char.y / 40][char.x / 40].info = 0;
+                        if (char.wbLimitQuantity < char.wbMaxLimitQuantity) char.wbLimitQuantity += 1;
+                        music.playWateritemSound();
+                    }
+                }
+            }
+        }
+
+        function monsterMove() {
+            for (let i = 0; i < monster.list.length; i++) {
+                if (monster.list[i].movingWait > 0)
+                    monster.list[i].movingWait -= 1;
+                else {
+                    if (monster.list[i].moveCount == 0) {
+                        let probability = Math.floor(Math.random() * 9);
+                        monster.list[i].moveCount = 40;
+                        if ((probability == 0) && (wallList[monster.list[i].y / 40 - 1][monster.list[i].x / 40 - 1] == 0) && (obstacle.list[monster.list[i].y / 40 - 1][monster.list[i].x / 40 - 1].info == 0))   //왼쪽 위
+                        { monster.list[i].moveXspeed = -1; monster.list[i].moveYspeed = -1; }
+                        else if ((probability == 1) && (wallList[monster.list[i].y / 40 - 1][monster.list[i].x / 40] == 0) && (obstacle.list[monster.list[i].y / 40 - 1][monster.list[i].x / 40].info == 0))   //위
+                        { monster.list[i].moveXspeed = 0; monster.list[i].moveYspeed = -1; }
+                        else if ((probability == 2) && (wallList[monster.list[i].y / 40 - 1][monster.list[i].x / 40 + 1] == 0) && (obstacle.list[monster.list[i].y / 40 - 1][monster.list[i].x / 40 + 1].info == 0))   //오른쪽 위
+                        { monster.list[i].moveXspeed = 1; monster.list[i].moveYspeed = -1; }
+                        else if ((probability == 3) && (wallList[monster.list[i].y / 40][monster.list[i].x / 40 + 1] == 0) && (obstacle.list[monster.list[i].y / 40][monster.list[i].x / 40 + 1].info == 0))   //오른쪽
+                        { monster.list[i].moveXspeed = 1; monster.list[i].moveYspeed = 0; }
+                        else if ((probability == 4) && (wallList[monster.list[i].y / 40 + 1][monster.list[i].x / 40 + 1] == 0) && (obstacle.list[monster.list[i].y / 40 + 1][monster.list[i].x / 40 + 1].info == 0))   //오른쪽 아래
+                        { monster.list[i].moveXspeed = 1; monster.list[i].moveYspeed = 1; }
+                        else if ((probability == 5) && (wallList[monster.list[i].y / 40 + 1][monster.list[i].x / 40] == 0) && (obstacle.list[monster.list[i].y / 40 + 1][monster.list[i].x / 40].info == 0))   //아래
+                        { monster.list[i].moveXspeed = 0; monster.list[i].moveYspeed = 1; }
+                        else if ((probability == 6) && (wallList[monster.list[i].y / 40 + 1][monster.list[i].x / 40 - 1] == 0) && (obstacle.list[monster.list[i].y / 40 + 1][monster.list[i].x / 40 - 1].info == 0))   //왼쪽 아래
+                        { monster.list[i].moveXspeed = -1; monster.list[i].moveYspeed = 1; }
+                        else if ((probability == 7) && (wallList[monster.list[i].y / 40][monster.list[i].x / 40 - 1] == 0) && (obstacle.list[monster.list[i].y / 40][monster.list[i].x / 40 - 1].info == 0))   //왼쪽
+                        { monster.list[i].moveXspeed = -1; monster.list[i].moveYspeed = 0; }
+                        else
+                            monster.list[i].moveCount = 0;
+                    }
+                    else {
+                        monster.list[i].moveCount -= 1;
+                        if (monster.list[i].moveCount == 0) {
+                            monster.list[i].movingWait = 10 + Math.floor(Math.random() * 10)
+                            monster.list[i].moveXspeed = 0; monster.list[i].moveYspeed = 0;
+                        }
+                    }
+                }
+                monster.list[i].x += monster.list[i].moveXspeed;
+                monster.list[i].y += monster.list[i].moveYspeed;
+            }
+        }
+
+        function waterballoonHitMonster() {
+            for (let i = 0; i < monster.list.length; i++) {
+                //몬스터가 움직이고 있을 경우도 고려하여 x, y좌표를 고려하여야함.
+                if ((waterballoon.list[Math.floor(monster.list[i].y / 40)][Math.floor(monster.list[i].x / 40)].what > 10) || (waterballoon.list[Math.floor((monster.list[i].y + 39) / 40)][Math.floor(monster.list[i].x / 40)].what > 10)
+                    || (waterballoon.list[Math.floor(monster.list[i].y / 40)][Math.floor((monster.list[i].x + 39) / 40)].what > 10) || (waterballoon.list[Math.floor((monster.list[i].y + 39) / 40)][Math.floor((monster.list[i].x + 39) / 40)].what > 10)) {
+                    let damage = Math.floor(char.attackMin + Math.random() * (char.attackMax - char.attackMin));
+                    monster.list[i].hp -= damage;
+                    monster.hitDamage[monster.hitDamage.length] = [monster.list[i].x, monster.list[i].y, damage, 0];
+                }
+            }
+        }
+
+        function monsterHitDamageCount() {
+            for (let i = 0; i < monster.hitDamage.length; i++) {
+                monster.hitDamage[i][3] += 1;
+                if (monster.hitDamage[i][3] > 50) {
+                    monster.hitDamage.pop(i); //i -= 1;
+                }
+            }
+        }
+
+        function monsterDie() {
+            for (let i = 0; i < monster.list.length; i++) {
+                if (monster.list[i].hp <= 0) {
+                    music.playMonsterDeathSound();
+                    char.money += monster.list[i].money; char.exp += monster.list[i].exp; monster.list.splice(i, 1); i -= 1;
+                    if (char.exp >= char.maxExp) {
+                        music.playLevelUpSound();
+                        char.levelupCharacter(char.exp - char.maxExp, char.level + 1);
+                        char.levelImageCount = 21 * 5;
+                    }
+                }
+            }
+        }
+
+        function waterballoonHitCharacter() {
+            if (char.waterballoonAttackDelay > 0) {
+                char.waterballoonAttackDelay -= 1;
+            }
+            else {
+                if ((waterballoon.list[Math.floor(char.y / 40)][Math.floor(char.x / 40)].what > 10) || (waterballoon.list[Math.floor((char.y + 39) / 40)][Math.floor(char.x / 40)].what > 10)
+                    || (waterballoon.list[Math.floor(char.y / 40)][Math.floor((char.x + 39) / 40)].what > 10) || (waterballoon.list[Math.floor((char.y + 39) / 40)][Math.floor((char.x + 39) / 40)].what > 10)) {
+                    let damage = Math.floor(char.attackMin + Math.random() * (char.attackMax - char.attackMin));
+                    char.currentHp -= damage;
+                    if (char.currentHp < 0) { mainCharacterDead(); }
+                    char.waterballoonAttackDelay = 10;
+                    char.waterballoonHitDamage[char.waterballoonHitDamage.length] = [char.x, char.y, damage, 0];
+                }
+            }
+        }
+
+        function waterballoonHitCharacterDamageCount() {
+            for (let i = 0; i < char.waterballoonHitDamage.length; i++) {
+                char.waterballoonHitDamage[i][3] += 1;
+                if (char.waterballoonHitDamage[i][3] > 50) {
+                    char.waterballoonHitDamage.splice(i, 1);
+                }
+            }
+        }
+
+        function monsterHitCharacter() {
+            if (char.monsterAttackDelay > 0) {
+                char.monsterAttackDelay -= 1;
+            }
+            else {
+                for (let k = 0; k < monster.list.length; k++) {
+                    if (((char.x + 39) > monster.list[k].x) && (char.x < (monster.list[k].x + 39)) && ((char.y + 39) > monster.list[k].y) && (char.y < (monster.list[k].y + 39))) {
+                        let damage = Math.floor(monster.list[k].attack + Math.random() * monster.list[k].attackRand);
+                        char.currentHp -= damage;
+                        if (char.currentHp < 0) { mainCharacterDead(); }
+                        char.monsterAttackDelay = 10;
+                        char.monsterHitDamage[char.monsterHitDamage.length] = [char.x, char.y, damage, 0];
+                    }
+                }
+            }
+        }
+
+        function mainCharacterDead() //메인 캐릭터 죽음
+        {
+            clearInterval(mainInterval);
+            char.currentHp = 0;
+            char.money *= 0.9;
+            char.level = parseInt(char.level) - 1;
+            if (char.level <= 0) char.level = 1;
+            char.levelupCharacter(char.exp, char.level);
+            alert("hp가 0이되어 기절했습니다. 레벨이 1 낮아지고 돈이 10% 깎입니다.");
+            gotoMapList();
+        }
+
+        function monsterHitCharacterDamageCount() {
+            for (let i = 0; i < char.monsterHitDamage.length; i++) {
+                char.monsterHitDamage[i][3] += 1;
+                if (char.monsterHitDamage[i][3] > 50) {
+                    char.monsterHitDamage.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            drawBackground();   //배경그리기
+            obstacle.drawObstacles();    //장애물들 그리기
+            waterballoon.drawWaterBalloon(); //물풍선 그리기
+            item.drawItem();     //아이템 그리기
+            monster.drawMonster();  //몬스터 그리기
+            monster.drawHitDamage();    //몬스터 히트 데미지 그리기
+            char.drawLevelUp();    //레벨업중이라면 레벨업 이미지 그리기
+            char.drawMainCharacter();    //캐릭터그리기
+            char.drawWaterballoonHitDamage();  //물풍선 맞은 데미지 그리기
+            char.drawMonsterHitDamage();   //몬스터에게 맞은 데미지 그리기
+            ctx.drawImage(lantern, char.showX-1180,char.showY-1180, 2400, 2400) //랜턴 그리기
+
+            drawStatus();   //hp exp level 그리기, 상태창 그리기
+            drawMouseCursor();  //draw mouseCursor
+            //ctx.fillText(char.leftSet, 200, 200);
+        }
+        function drawBackground() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 1200, 800);
+            ctx.drawImage(backgroundImage, backgroundx, backgroundy, 1600, 1600);
+        }
+        function drawStatus() {
+            ctx.fillStyle = "tomato"; ctx.fillRect(0, 700, 1200, 28);
+            ctx.fillStyle = '#999999'; ctx.fillRect(2, 702, 1196, 24);
+            ctx.fillStyle = "maroon"; ctx.fillRect(0, 702, 1200 * char.currentHp / char.maxHp, 24);
+            ctx.fillStyle = 'black'; ctx.font = "20px Arial"; ctx.fillText('HP:' + char.currentHp + '/' + char.maxHp, 30, 722);
+            ctx.fillStyle = "Aqua"; ctx.fillRect(0, 728, 1200, 28);
+            ctx.fillStyle = '#999999'; ctx.fillRect(202, 730, 1196, 24);
+            ctx.fillStyle = "Lime"; ctx.fillRect(200, 730, 1000 * char.exp / char.maxExp, 24);
+            ctx.fillStyle = "#0039e6"; ctx.fillRect(0, 730, 200, 24);
+            ctx.fillStyle = 'black'; ctx.font = "20px Arial"; ctx.fillText('Exp:' + char.exp + '/' + char.maxExp, 220, 750);
+            ctx.fillText('Level:' + char.level, 30, 750);
+
+            if (char.statusShow) {
+                let startX = 100;
+                let startY = 100;
+                ctx.fillStyle = "black"; ctx.fillRect(startX, startY, 220, 220);
+                ctx.fillStyle = 'white'; ctx.fillRect(startX + 2, startY + 2, 216, 216);
+                ctx.fillStyle = 'black'; ctx.font = "20px Arial";
+                ctx.fillText('최대물풍선개수:' + char.wbLimitQuantity, startX + 20, startY + 40);
+                ctx.fillText('물줄기 길이:' + char.wbLen, startX + 20, startY + 80);
+                ctx.fillText('속도:' + char.speed, startX + 20, startY + 120);
+                ctx.fillText('돈:' + char.money, startX + 20, startY + 160);
+            }
+        }
+        function drawMouseCursor() {
+            ctx.drawImage(mouseImage, mouseX, mouseY, 30, 30);
+        }
+    </script>
+</head>
+
+<body style="background-color:black">
+    <center>
+        <canvas id="can" width="1200" height="756" style=" cursor:none;" />
+        <!--0~700화면. ~728에이치피 ~856exp  1200 756 border:1px solid #c3c3c3;-->
+    </center>
+    <center>
+        <div style="display:inline;">
+            <button type="button" class="btn btn-info" onclick="gotoMapList()">저장 & 맵리스트 이동</button>
+            <label for="gameVolume" style="color:white"> 게임소리:</label>
+            <input type="range" class="" min="0" max="100" id="gmaeVolume" oninput="music.changeVolume(this.value)">
+        </div>
+    </center>
+</body>
+
+</html>

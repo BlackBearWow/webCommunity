@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        //변수선언
+        let admin={ //맵 만들때 필요한 변수
+            administrator:1,
+            x:0,
+            y:0,
+            mw:100,
+            mh:50,
+        };
+        let username;   //화면에 표시될 이름
+        let can;        //canvas 객체
+        let canvasWidth; let canvasHeight;  //canvas의 가로 세로 길이
+        let ctx;        //context객체를 얻어야 drawimage와 filltext를 할 수 있음
+        let keyBoard={};//키보드를 입력했는지 아닌지 확인하는 맵
+        let blockSet=0; //맵만들때 무슨 이미지를 클릭했는지 저장하는 변수
+        let imageSet=0; //맵만들때 몇번째 줄을 클릭했는지 저장하는 변수. 배경인지 장해물인지 구분한다.
+        let mousepress=0; //맵만들때 마우스를 눌렀는지 안눌렀는지 확인하는 변수
+        let startX,startY,endX,endY; //맵만들때 마우스 시작위치 끝나는 위치 변수?
+        let clicking=0; //맵 만들때 클릭중인지 확인하는것?
+        let Img=[];     //맵 관리 모드일때 보이는 이미지들 목록
+        let mouseX, mouseY; //현재 마우스 x, y좌표 
+        let oneBlock=40;  
+
+        let halfBlock=oneBlock/2;
+
+        let WallList=[]
+                            // 1:벽 0:공중 101~107:아이템 1000대:npc들 10000:부술 수 있는장애물 10001:물풍선1p 20001:물풍선2p 30001:빌딩들 40001:맵 이동
+                            // 0~999: 지나다닐 수 있는 공간 
+                            // 등등 써놓은거 보면 너무 난잡함. 그냥 맵을 작게 만들고 배열을 여러개 만드는게 좋아보임. (벽 공중) (물풍선) (부술수있는 장애물) (돈 아이템)
+        let backgroundInfo=[]; let wallInfo=[]; //맵 관리 모드에서 필요한 변수.
+        
+        let mw; let mh;    //mapwidth mapheight
+        let mwBlock; let mhBlock;  //맵가로 몇칸인지, 맵세로 몇칸인지
+        //mw[0]=4000; mwBlock[0]=mw[0]/oneBlock; mh[0]=2000; mhBlock[0]=mh[0]/oneBlock;
+        let mouseview = 1;  //마우스를 보일지 안보일지 정하는 변수
+        let pictureSaveModeFlag = 0;    //화면을 저장할지 말지 정하는 변수
+        if (1) {
+            backgroundInfo = [
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+            ];
+            //가로:40세로:40
+            wallInfo = [
+                [5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                [5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5],
+            ];
+            //가로:40세로:40
+        }
+
+        //초기화
+        $(document).ready(function(){
+            initialize();
+        });
+
+        function initialize()
+        {
+            can=document.getElementById("can");
+            canvasWidth=can.width; canvasHeight=can.height;
+            ctx=can.getContext("2d");
+
+            ctx.fillStyle='yellow'; ctx.font = "50px Arial";
+            ctx.fillText('Loading...',200,200);
+
+            Img=[
+            [
+                new addImage("/images/floorImage/바닥1.png"),
+                new addImage("/images/floorImage/바닥2.png"),
+                new addImage("/images/floorImage/바닥3.png"),
+                new addImage("/images/floorImage/바닥4.png"),
+                new addImage("/images/floorImage/바닥5.png"),
+                new addImage("/images/floorImage/바닥6.png"),
+                new addImage("/images/floorImage/바닥7.png"),
+            ],
+            [
+                new addImage("/images/wallImage/지우개.jpg"),
+                new addImage("/images/wallImage/벽01.png"),
+                new addImage("/images/wallImage/벽02.png"),
+                new addImage("/images/wallImage/벽03.png"),
+                new addImage("/images/wallImage/벽04.png"),
+                new addImage("/images/wallImage/벽05.png"),
+                new addImage("/images/wallImage/벽06.png"),
+                new addImage("/images/wallImage/벽07.png"),
+                new addImage("/images/wallImage/벽08.png"),
+            ],
+            ];
+
+            admin.mh = backgroundInfo.length;
+            admin.mw = backgroundInfo[0].length;
+
+            start();
+        }
+        function addImage(source){
+            this.image=new Image();
+            this.image.src=source;
+        }
+
+        function increaseLeft(){    //맵 만들기 모드일떄 왼쪽 줄 증가
+            for(yy=0;yy<admin.mh;yy++){
+                backgroundInfo[yy][admin.mw]=0; wallInfo[yy][admin.mw]=0;
+            }
+            admin.mw+=1;
+            for(let y=0;y<admin.mh;y++)
+            for(let x=admin.mw-1;x>0;x--){
+                backgroundInfo[y][x]=backgroundInfo[y][x-1];
+                wallInfo[y][x]=wallInfo[y][x-1];
+            }
+            for(let y=0;y<admin.mh;y++){ 
+                if(imageSet == 0) {
+                    backgroundInfo[y][0]=blockSet; wallInfo[y][0]=blockSet;
+                }
+                else
+                    backgroundInfo[y][0]=0; wallInfo[y][0]=0;
+            }
+        }
+        function decreaseLeft(){    //맵 만들기 모드일떄 왼쪽 줄 감소
+            for(let y=0;y<admin.mh;y++)
+            for(let x=0;x<admin.mw-1;x++){
+                backgroundInfo[y][x]=backgroundInfo[y][x+1];
+                wallInfo[y][x]=wallInfo[y][x+1];
+            }
+            admin.mw-=1;
+            for(yy=0;yy<admin.mh;yy++){
+                backgroundInfo[yy].splice(admin.mw,1);
+                wallInfo[yy].splice(admin.mw,1);
+            }
+        }
+        function increaseRight(){   //맵 만들기 모드일떄 오른쪽 줄 증가
+            for(yy=0;yy<admin.mh;yy++){
+                if(imageSet == 0) {
+                    backgroundInfo[yy][admin.mw]=blockSet; wallInfo[yy][admin.mw]=blockSet;
+                }
+                else
+                    backgroundInfo[yy][admin.mw]=0; wallInfo[yy][admin.mw]=0;
+            }
+            admin.mw+=1;
+        }
+        function decreaseRight(){   //맵 만들기 모드일떄 왼쪽 줄 감소
+            admin.mw-=1;
+            for(yy=0;yy<admin.mh;yy++){
+                backgroundInfo[yy].splice(admin.mw,1);
+                wallInfo[yy].splice(admin.mw,1);
+            }
+        }
+        function increaseUp(){  //맵 만들기 모드일떄 위쪽 줄 증가
+            backgroundInfo[admin.mh]=new Array(admin.mw); wallInfo[admin.mh]=new Array(admin.mw); 
+            for(xx=0;xx<admin.mw;xx++){
+                backgroundInfo[admin.mh][xx]=0; wallInfo[admin.mh][xx]=0;
+            }
+            admin.mh+=1;
+            for(let x=0;x<admin.mw;x++)
+            for(let y=admin.mh-1;y>0;y--){
+                backgroundInfo[y][x]=backgroundInfo[y-1][x];
+                wallInfo[y][x]=wallInfo[y-1][x];
+            }
+            for(let x=0;x<admin.mw;x++){ 
+                if(imageSet == 0) {
+                    backgroundInfo[0][x]=blockSet; wallInfo[0][x]=blockSet;
+                }
+                else
+                    backgroundInfo[0][x]=0; wallInfo[0][x]=0;
+            }
+        }
+        function decreaseUp(){  //맵 만들기 모드일떄 위쪽 줄 감소
+            for(let x=0;x<admin.mw;x++)
+            for(let y=0;y<admin.mh-1;y++){
+                backgroundInfo[y][x]=backgroundInfo[y+1][x];
+                wallInfo[y][x]=wallInfo[y+1][x];
+            }
+            admin.mh-=1;
+            backgroundInfo.splice(admin.mh,1);
+            wallInfo.splice(admin.mh,1);
+        }
+        function increaseDown(){    //맵 만들기 모드일떄 아래 줄 증가
+            backgroundInfo[admin.mh]=new Array(admin.mw); wallInfo[admin.mh]=new Array(admin.mw); 
+            for(xx=0;xx<admin.mw;xx++){
+                if(imageSet == 0) {
+                    backgroundInfo[admin.mh][xx]=blockSet; wallInfo[admin.mh][xx]=blockSet;    
+                }
+                else
+                    backgroundInfo[admin.mh][xx]=0; wallInfo[admin.mh][xx]=0;
+            }
+            admin.mh+=1;
+        }
+        function decreaseDown(){    //맵 만들기 모드일떄 왼쪽 줄 감소
+            admin.mh-=1;
+            backgroundInfo.splice(admin.mh,1);
+            wallInfo.splice(admin.mh,1);
+        }
+        function saveMakedMapInfo(){
+            let myWindow = window.open("", "MsgWindow", "width=1200,height=900");
+            myWindow.document.write('<pre>');
+            myWindow.document.write('if(1){backgroundInfo=['+'<br>');
+            for(y=0;y<admin.mh;y++)
+            myWindow.document.write('   ['+backgroundInfo[y]+'],'+'<br>');
+            myWindow.document.write('   ];'+'<br>');
+            myWindow.document.write('   //가로:'+admin.mw+'세로:'+admin.mh+'<br>');
+            
+            myWindow.document.write('   wallInfo=['+'<br>');
+            for(a=0;a<admin.mh;a++)
+            myWindow.document.write('   ['+wallInfo[a]+'],'+'<br>');
+            myWindow.document.write('   ];'+'<br>');
+            myWindow.document.write('   //가로:'+admin.mw+'세로:'+admin.mh+'<br>');
+
+            myWindow.document.write('}</pre>');
+        }
+        function loadWallList(){
+            let finalmapInformation=new Array(admin.mh);
+            for(a=0;a<admin.mh;a++)
+                finalmapInformation[a]=new Array(admin.mw);
+            for(yy=0;yy<admin.mh;yy++)
+            for(xx=0;xx<admin.mw;xx++)finalmapInformation[yy][xx]=0;
+            //저장할 공간 생성.
+            for(yy=0;yy<admin.mh;yy++)
+            for(xx=0;xx<admin.mw;xx++){
+                if(wallInfo[yy][xx]) finalmapInformation[yy][xx]=1;
+            }//장애물 설정
+            let myWindow = window.open("", "MsgWindow", "width=800,height=800");
+            myWindow.document.write('<pre>');
+            myWindow.document.write('wallList=['+'<br>');
+            for(a=0;a<admin.mh;a++)
+            myWindow.document.write('   ['+finalmapInformation[a]+'],'+'<br>');
+            myWindow.document.write('];'+'<br>');
+            myWindow.document.write('</pre>');
+        }
+        function savePictureMode()
+        {
+            if (pictureSaveModeFlag)
+            {
+                pictureSaveModeFlag = 0;
+                document.getElementById('can').width = 1200;
+                document.getElementById('can').height = 856;
+            }
+            else
+            {
+                pictureSaveModeFlag = 1;
+                document.getElementById('can').width = admin.mw * 40;
+                document.getElementById('can').height = admin.mh * 40;
+                admin.x = 0; admin.y = 0;
+            }
+        }
+        function start(){
+            mainInterval=setInterval(update,10);
+            window.addEventListener('keydown',function(e){ keyBoard[e.keyCode]=true; })
+            window.addEventListener('keyup',function(e){ keyBoard[e.keyCode]=false; })
+            document.getElementById("can").addEventListener('mousemove', function (e) { mouseX = e.offsetX; mouseY = e.offsetY; })
+            document.getElementById("can").addEventListener('wheel', function (e) { admin.y-=e.deltaY/2.5; })
+            document.getElementById("can").addEventListener("mouseup", function(e) { mousepress=0; });
+            document.getElementById("can").addEventListener("mousedown", function(e) {
+                mousepress=1;
+                ifset=1;
+                for(a=0;a<Img[0].length;a++)
+                    if((0<=mouseY)&&(mouseY<40)&&(mouseX>=a*40)&&(mouseX<(a+1)*40))
+                        {blockSet=a;imageSet=0;ifset=0; mousepress=0;}
+                for(a=0;a<Img[1].length;a++)
+                    if((40<=mouseY)&&(mouseY<80)&&(mouseX>=a*40)&&(mouseX<(a+1)*40))
+                        {blockSet=a;imageSet=1;ifset=0; mousepress=0;}
+            });
+        }
+        
+        function update()
+        {
+            if(keyBoard[37]) admin.x+=10; else if(keyBoard[39]) admin.x-=10;
+            if(keyBoard[38]) admin.y+=10; else if(keyBoard[40]) admin.y-=10;
+            ctx.fillStyle='#aaaaaa';
+            ctx.fillRect(0,0,canvasWidth,canvasHeight);
+            for(yy=0;yy<admin.mh;yy++){
+                ctx.fillStyle="tomato";
+                ctx.fillRect(-40+admin.x,yy*40+admin.y,40,40);
+                ctx.fillRect(backgroundInfo[0].length*40+admin.x,yy*40+admin.y,40,40);
+                ctx.fillStyle="LawnGreen";
+                ctx.fillRect(-80+admin.x,yy*40+admin.y,40,40);
+                ctx.fillRect(backgroundInfo[0].length*40+admin.x+40,yy*40+admin.y,40,40);
+            }
+            for(xx=0;xx<admin.mw;xx++){
+                ctx.fillStyle="tomato";
+                ctx.fillRect(xx*40+admin.x,-40+admin.y,40,40);
+                ctx.fillRect(xx*40+admin.x,backgroundInfo.length*40+admin.y,40,40);
+                ctx.fillStyle="LawnGreen";
+                ctx.fillRect(xx*40+admin.x,-80+admin.y,40,40);
+                ctx.fillRect(xx*40+admin.x,backgroundInfo.length*40+admin.y+40,40,40);
+            }
+            for(yy=0;yy<admin.mh;yy++)//backgroundInfo
+            for(xx=0;xx<admin.mw;xx++){
+                if(backgroundInfo[yy][xx]!=-1)
+                ctx.drawImage(Img[0][backgroundInfo[yy][xx]].image,xx*40+admin.x,yy*40+admin.y,40,40);
+            }
+            for(yy=0;yy<admin.mh;yy++)//wallInfo
+            for(xx=0;xx<admin.mw;xx++){
+                if(wallInfo[yy][xx]){
+                    ctx.drawImage(Img[1][wallInfo[yy][xx]].image,xx*40+admin.x,yy*40+admin.y,40,40);
+                }
+            }
+            if(mousepress){
+                if((admin.y<=mouseY)&&(mouseY<admin.y+admin.mh*40)&&(mouseX>=admin.x-40)&&(mouseX<admin.x)) {admin.x-=40; increaseLeft();}  //왼쪽 늘리기
+                else if ((admin.y <= mouseY) && (mouseY < admin.y + admin.mh * 40) && (mouseX >= admin.x - 80) && (mouseX < admin.x - 40)) { admin.x += 40; decreaseLeft(); }  //왼쪽 줄이기
+                else if ((admin.y <= mouseY) && (mouseY < admin.y + admin.mh * 40) && (mouseX >= admin.x + admin.mw * 40) && (mouseX < admin.x + admin.mw * 40 + 40)) increaseRight();   //오른쪽 늘리기
+                else if ((admin.y <= mouseY) && (mouseY < admin.y + admin.mh * 40) && (mouseX >= admin.x + admin.mw * 40 + 40) && (mouseX < admin.x + admin.mw * 40 + 80)) decreaseRight();    //오른쪽 줄이기
+                else if ((admin.y - 40 <= mouseY) && (mouseY < admin.y) && (mouseX >= admin.x) && (mouseX < admin.x + admin.mw * 40)) { admin.y -= 40; increaseUp(); }   //위쪽 늘리기
+                else if ((admin.y - 80 <= mouseY) && (mouseY < admin.y - 40) && (mouseX >= admin.x) && (mouseX < admin.x + admin.mw * 40)) { admin.y += 40; decreaseUp(); }    //위쪽 줄이기
+                else if ((admin.y + admin.mh * 40 <= mouseY) && (mouseY < admin.y + admin.mh * 40 + 40) && (mouseX >= admin.x) && (mouseX < admin.x + admin.mw * 40)) increaseDown();    //아래쪽 늘리기
+                else if ((admin.y + admin.mh * 40 + 40 <= mouseY) && (mouseY < admin.y + admin.mh * 40 + 80) && (mouseX >= admin.x) && (mouseX < admin.x + admin.mw * 40)) decreaseDown(); //아래쪽 줄이기
+                if((imageSet==0)&&((mouseY-admin.y)>0)&&((mouseY-admin.y)<admin.mh*40)&&((mouseX-admin.x)>0)&&((mouseX-admin.x)<admin.mw*40)){backgroundInfo[Math.floor((mouseY-admin.y)/40)][Math.floor((mouseX-admin.x)/40)]=blockSet;wallInfo[Math.floor((mouseY-admin.y)/40)][Math.floor((mouseX-admin.x)/40)]=0;}
+                else if((imageSet==1)&&((mouseY-admin.y)>0)&&((mouseY-admin.y)<admin.mh*40)&&((mouseX-admin.x)>0)&&((mouseX-admin.x)<admin.mw*40))wallInfo[Math.floor((mouseY-admin.y)/40)][Math.floor((mouseX-admin.x)/40)]=blockSet;
+            }
+            if (!pictureSaveModeFlag)  //화면 저장 모드라면 이미지 리스트 안보이기 & 마우스 안보이기
+            {
+                for(a=0;a<Img[0].length;a++)
+                    ctx.drawImage(Img[0][a].image,a*40,0,40,40);
+                for(a=0;a<Img[1].length;a++)
+                    ctx.drawImage(Img[1][a].image,a*40,40,40,40);
+                ctx.fillStyle = "black";
+                ctx.fillRect(mouseX, mouseY, 32, 32);
+                ctx.drawImage(Img[imageSet][blockSet].image, mouseX + 1, mouseY + 1, 30, 30);
+                ctx.font = "20px Comic Sans MS";
+                ctx.fillStyle = "yellow";
+                ctx.fillText(Math.floor((mouseX - admin.x) / 40) + ',' + Math.floor((mouseY - admin.y) / 40), mouseX, mouseY);
+            }
+        }
+
+    </script>
+</head>
+    <body style="background-color:black">
+    <center>
+    <canvas id="can" width="1200" height="856" style=" cursor:none;"/>
+    <!--0~800화면. ~828에이치피 ~856exp  1200 856 border:1px solid #c3c3c3;-->
+    </center>
+    <center>
+        <div id="adminDiv" style="display:inline;">
+            <button onclick="savePictureMode()">화면 저장 모드</button>
+            <button onclick="saveMakedMapInfo()">load backgroundInfo and wallInfo</button>
+            <button onclick="loadWallList()">loadWallList</button>
+        </div>
+    </center>
+</body>
+</html>

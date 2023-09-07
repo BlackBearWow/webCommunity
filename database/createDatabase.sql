@@ -6,6 +6,7 @@ create table account(
 	userId varchar(40) not null,
 	passwd varchar(70) not null,
 	nickname varchar(40) not null,
+	charImg varchar(40) not null,
 	level int DEFAULT 1,
 	exp int DEFAULT 1,
 	speed float DEFAULT 1.2,
@@ -17,8 +18,8 @@ create table account(
 drop table if exists post;
 create table post(
 	bId int not null auto_increment,
-	title varchar(50) not null,
-	text varchar(500) not null,
+	title varchar(100) not null,
+	text varchar(1000) not null,
 	postDatetime datetime not null,
 	commentNum int default 0,
 	userId varchar(40) not null,
@@ -29,7 +30,7 @@ drop table if exists comment;
 create table comment(
 	cId int not null auto_increment,
 	bId int not null,
-	cText varchar(100),
+	cText varchar(400),
 	commentDatetime datetime not null,
 	userId varchar(40) not null,
 	nickname varchar(40) not null,

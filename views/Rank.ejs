@@ -28,7 +28,7 @@
 				<th scope="col">닉네임</th>
 				<th scope="col">level</th>
 				<th scope="col">exp</th>
-				<th scope="col">배찡~</th>
+				<th scope="col">캐릭터</th>
 			</thead>
 			<tbody>
 				<% for(x in rows) { %>
@@ -37,7 +37,9 @@
 					<td><%=rows[x].nickname%></td>
 					<td><%=rows[x].level%></td>
 					<td><%=rows[x].exp%></td>
-					<td><img src="/images/bazzi/배찌31.png" alt='배찌'></td>
+					<%if(rows[x].charImg=='bazzi'){%><td><img src="/images/character/bazzi/bazziDown1.png" alt='배찌'></td><%}%>
+					<%if(rows[x].charImg=='mario'){%><td><img src="/images/character/mario/marioDown1.png" alt='배찌'></td><%}%>
+					<%if(rows[x].charImg=='pikachu'){%><td><img src="/images/character/pikachu/pikachuDown1.png" alt='배찌'></td><%}%>
 				</tr>
 				<% } %>
 			</tbody>
