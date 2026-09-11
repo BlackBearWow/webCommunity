@@ -25,6 +25,7 @@ app.use('/js', express.static('static/js'));
 
 //room은 새로운 파일로 만들어 따로 관리하자.
 const roomModule = require('./room');
+const { setTimeout } = require('node:timers');
 const room = new roomModule.Room;
 
 // session
@@ -415,8 +416,8 @@ app.post('/makeNewChatCARoom', (req, res) => {
     res.send(key);
 })
 
-server.listen(10101, () => {
-    console.log('listening on *:10101');
+server.listen(8766, () => {
+    console.log('listening on *:8766');
 });
 
 require('./socket')(server, session_store, room);
